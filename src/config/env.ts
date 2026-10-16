@@ -1,0 +1,97 @@
+import "server-only";
+
+import { z } from "zod";
+
+const environmentSchema = z.object({
+  DATABASE_URL: z.string().url().optional(),
+  AUTH_SECRET: z.string().min(32).optional(),
+  AUTH_URL: z.string().url().optional(),
+  NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+  RESEND_API_KEY: z.string().min(1).optional(),
+  EMAIL_FROM: z.string().min(3).optional(),
+  AUTH_TOKEN_SECRET: z.string().min(32).optional(),
+  PAYFAST_MERCHANT_ID: z.string().optional(),
+  PAYFAST_PASSPHRASE: z.string().optional(),
+  PAYFAST_SANDBOX: z.enum(["true", "false"]).optional(),
+  PAYFAST_SOURCE_IPS: z.string().optional(),
+  CLEANUP_CRON_SECRET: z.string().min(32).optional(),
+  CLOUDINARY_CLOUD_NAME: z.string().min(1).optional(),
+  CLOUDINARY_API_KEY: z.string().min(1).optional(),
+  CLOUDINARY_API_SECRET: z.string().min(1).optional(),
+});
+
+export type ServerEnvironment = z.infer<typeof environmentSchema>;
+
+export function getServerEnvironment(): ServerEnvironment {
+  const result = environmentSchema.safeParse(process.env);
+
+  if (!result.success) {
+    const invalidKeys = result.error.issues
+      .map((issue) => issue.path.join("."))
+      .filter((key, index, keys) => keys.indexOf(key) === index);
+    throw new Error(`Invalid environment configuration: ${invalidKeys.join(", ")}`);
+  }
+
+  return result.data;
+}
+
+export function requireAuthEnvironment() {
+  const environment = getServerEnvironment();
+  const missing = [
+    !environment.DATABASE_URL && "DATABASE_URL",
+    !environment.AUTH_SECRET && "AUTH_SECRET",
+    !environment.AUTH_TOKEN_SECRET && "AUTH_TOKEN_SECRET",
+    process.env.NODE_ENV === "production" &&
+      !environment.AUTH_URL &&
+      !process.env.VERCEL &&
+      "AUTH_URL",
+  ].filter((name): name is string => Boolean(name));
+
+  if (missing.length > 0) {
+    throw new Error(`Missing required authentication configuration: ${missing.join(", ")}`);
+  }
+
+  return environment as ServerEnvironment & {
+    DATABASE_URL: string;
+    AUTH_SECRET: string;
+    AUTH_TOKEN_SECRET: string;
+  };
+}
+
+export function requireEmailEnvironment() {
+  const environment = requireAuthEnvironment();
+  const missing = [
+    !environment.RESEND_API_KEY && "RESEND_API_KEY",
+    !environment.EMAIL_FROM && "EMAIL_FROM",
+    !environment.NEXT_PUBLIC_APP_URL && "NEXT_PUBLIC_APP_URL",
+  ].filter((name): name is string => Boolean(name));
+
+  if (missing.length > 0) {
+    throw new Error(`Missing required email configuration: ${missing.join(", ")}`);
+  }
+
+  return environment as typeof environment & {
+    RESEND_API_KEY: string;
+    EMAIL_FROM: string;
+    NEXT_PUBLIC_APP_URL: string;
+  };
+}
+
+export function requireCloudinaryEnvironment() {
+  const environment = getServerEnvironment();
+  const missing = [
+    !environment.CLOUDINARY_CLOUD_NAME && "CLOUDINARY_CLOUD_NAME",
+    !environment.CLOUDINARY_API_KEY && "CLOUDINARY_API_KEY",
+    !environment.CLOUDINARY_API_SECRET && "CLOUDINARY_API_SECRET",
+  ].filter((name): name is string => Boolean(name));
+
+  if (missing.length > 0) {
+    throw new Error(`Missing required Cloudinary configuration: ${missing.join(", ")}`);
+  }
+
+  return environment as typeof environment & {
+    CLOUDINARY_CLOUD_NAME: string;
+    CLOUDINARY_API_KEY: string;
+    CLOUDINARY_API_SECRET: string;
+  };
+}

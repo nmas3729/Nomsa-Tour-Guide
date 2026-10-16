@@ -1,0 +1,704 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/server/db/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  CUSTOMER
+  GUIDE
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum GuideApplicationStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum ExperienceStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  ARCHIVED
+}
+
+enum BookingStatus {
+  PENDING
+  AWAITING_PAYMENT
+  CONFIRMED
+  CHECKED_IN
+  COMPLETED
+  CANCELLED
+  REFUND_REQUESTED
+  REFUNDED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  REFUND_PENDING
+  REFUNDED
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+enum CustomRequestStatus {
+  SUBMITTED
+  ASSIGNED
+  QUOTED
+  ACCEPTED
+  REJECTED
+  BOOKED
+  COMPLETED
+  CANCELLED
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NotificationType {
+  BOOKING_UPDATE
+  PAYMENT_UPDATE
+  REQUEST_UPDATE
+  REVIEW_UPDATE
+  GUIDE_APPLICATION_UPDATE
+  SYSTEM
+}
+
+enum GuideDocumentType {
+  GOVERNMENT_ID
+  BUSINESS_REGISTRATION
+  TAX_CERTIFICATE
+  PROFILE_PHOTO
+  SUPPORTING_DOCUMENT
+  BANKING_VERIFICATION
+}
+
+enum PaymentProvider {
+  PAYFAST
+}
+
+enum AuthTokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+model User {
+  id             String    @id @default(uuid()) @db.Uuid
+  name           String
+  email          String    @unique
+  passwordHash   String
+  phone          String?
+  image          String?   @map("avatar")
+  role           UserRole  @default(CUSTOMER)
+  emailVerified  DateTime? @db.Timestamptz(3)
+  isActive       Boolean   @default(true)
+  sessionVersion Int       @default(0)
+  deletedAt      DateTime? @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
+
+  customerProfile           CustomerProfile?
+  guideProfile              GuideProfile?
+  guideApplications         GuideApplication[] @relation("GuideApplicant")
+  reviewedGuideApplications GuideApplication[] @relation("GuideApplicationReviewer")
+  bookings                  Booking[]          @relation("BookingCustomer")
+  customRequests            CustomRequest[]    @relation("CustomRequestCustomer")
+  requestReplies            RequestReply[]
+  wishlistItems             Wishlist[]
+  notifications             Notification[]
+  auditLogs                 AuditLog[]
+  reviews                   Review[]           @relation("ReviewCustomer")
+  updatedSettings           Setting[]          @relation("SettingUpdater")
+  accounts                  Account[]
+  sessions                  Session[]
+  authTokens                AuthToken[]
+
+  @@index([role, isActive])
+  @@index([deletedAt])
+}
+
+/// Required by the Auth.js Prisma adapter; JWT sessions are used, so Session rows are not created.
+model Account {
+  id                String  @id @default(uuid()) @db.Uuid
+  userId            String  @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+/// Required by Auth.js adapter interface, retained for adapter compatibility with JWT strategy.
+model Session {
+  id           String   @id @default(uuid()) @db.Uuid
+  sessionToken String   @unique
+  userId       String   @db.Uuid
+  expires      DateTime @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime @db.Timestamptz(3)
+
+  @@unique([identifier, token])
+}
+
+/// One-time app-owned email verification and password reset tokens; only SHA-256 digests are stored.
+model AuthToken {
+  id         String        @id @default(uuid()) @db.Uuid
+  userId     String        @db.Uuid
+  type       AuthTokenType
+  tokenHash  String        @unique
+  expiresAt  DateTime      @db.Timestamptz(3)
+  consumedAt DateTime?     @db.Timestamptz(3)
+  createdAt  DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime      @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, consumedAt])
+  @@index([type, expiresAt])
+}
+
+/// Fixed-window throttling buckets. The key is a keyed digest of the identifier and client address.
+model AuthRateLimit {
+  key             String   @id
+  attempts        Int      @default(0)
+  windowStartedAt DateTime @db.Timestamptz(3)
+  createdAt       DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([windowStartedAt])
+}
+
+model CustomerProfile {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @unique @db.Uuid
+  preferredCurrency  String?  @db.Char(3)
+  preferredLanguages String[] @default([])
+  createdAt          DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model GuideProfile {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  userId             String                 @unique @db.Uuid
+  biography          String?
+  specialties        String[]               @default([])
+  languages          String[]               @default([])
+  yearsExperience    Int                    @default(0)
+  operatingAreas     String[]               @default([])
+  verificationStatus GuideApplicationStatus @default(PENDING)
+  /// Cached catalogue aggregates for guide discovery; kept in sync when reviews change.
+  averageRating      Decimal                @default(0) @db.Decimal(3, 2)
+  totalReviews       Int                    @default(0)
+  profilePhoto       String?
+  deletedAt          DateTime?              @db.Timestamptz(3)
+  createdAt          DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime               @updatedAt @db.Timestamptz(3)
+
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankingDetails   GuideBankingDetails?
+  experiences      Experience[]
+  bookings         Booking[]            @relation("BookingGuide")
+  payouts          Payout[]
+  reviews          Review[]             @relation("ReviewGuide")
+  assignedRequests CustomRequest[]      @relation("CustomRequestGuide")
+
+  @@index([verificationStatus, deletedAt])
+  @@index([averageRating])
+}
+
+/// Sensitive bank account details are stored separately from the public guide profile.
+/// accountNumberEncrypted must contain an application-encrypted value, never plaintext.
+model GuideBankingDetails {
+  id                     String   @id @default(uuid()) @db.Uuid
+  guideProfileId         String   @unique @db.Uuid
+  bankName               String
+  accountHolder          String
+  accountNumberEncrypted String
+  branchCode             String
+  accountType            String?
+  createdAt              DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt              DateTime @updatedAt @db.Timestamptz(3)
+
+  guideProfile GuideProfile @relation(fields: [guideProfileId], references: [id], onDelete: Cascade)
+}
+
+model GuideApplication {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  applicantId           String                 @db.Uuid
+  reviewedById          String?                @db.Uuid
+  fullName              String
+  dateOfBirth           DateTime?              @db.Date
+  /// Store encrypted at the application layer; never persist a plaintext government ID.
+  governmentIdEncrypted String?
+  businessName          String?
+  businessRegistration  String?
+  taxNumber             String?
+  phone                 String
+  email                 String
+  biography             String
+  yearsExperience       Int
+  specialties           String[]               @default([])
+  languages             String[]               @default([])
+  operatingAreas        String[]               @default([])
+  emergencyContactName  String
+  emergencyContactPhone String
+  status                GuideApplicationStatus @default(PENDING)
+  adminNotes            String?
+  submittedAt           DateTime               @default(now()) @db.Timestamptz(3)
+  approvedAt            DateTime?              @db.Timestamptz(3)
+  createdAt             DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime               @updatedAt @db.Timestamptz(3)
+
+  applicant  User                       @relation("GuideApplicant", fields: [applicantId], references: [id], onDelete: Restrict)
+  reviewedBy User?                      @relation("GuideApplicationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  documents  GuideApplicationDocument[]
+
+  @@index([applicantId, status])
+  @@index([status, submittedAt])
+  @@index([reviewedById])
+}
+
+model GuideApplicationDocument {
+  id               String            @id @default(uuid()) @db.Uuid
+  applicationId    String            @db.Uuid
+  documentType     GuideDocumentType
+  storageKey       String            @unique
+  originalFilename String
+  mimeType         String
+  sizeBytes        Int
+  createdAt        DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime          @updatedAt @db.Timestamptz(3)
+
+  application GuideApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, documentType])
+}
+
+model Country {
+  id        String   @id @default(uuid()) @db.Uuid
+  code      String   @unique @db.Char(2)
+  name      String   @unique
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  provinces Province[]
+}
+
+model Province {
+  id        String   @id @default(uuid()) @db.Uuid
+  countryId String   @db.Uuid
+  name      String
+  slug      String
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  country Country @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  cities  City[]
+
+  @@unique([countryId, slug])
+  @@index([countryId, name])
+}
+
+model City {
+  id         String   @id @default(uuid()) @db.Uuid
+  provinceId String   @db.Uuid
+  name       String
+  slug       String
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(3)
+
+  province     Province      @relation(fields: [provinceId], references: [id], onDelete: Restrict)
+  destinations Destination[]
+
+  @@unique([provinceId, slug])
+  @@index([provinceId, name])
+}
+
+model Destination {
+  id        String    @id @default(uuid()) @db.Uuid
+  cityId    String    @db.Uuid
+  name      String
+  slug      String
+  latitude  Decimal?  @db.Decimal(9, 6)
+  longitude Decimal?  @db.Decimal(9, 6)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
+
+  city           City            @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  experiences    Experience[]
+  customRequests CustomRequest[]
+
+  @@unique([cityId, slug])
+  @@index([cityId, deletedAt])
+  @@index([latitude, longitude])
+}
+
+model Category {
+  id        String    @id @default(uuid()) @db.Uuid
+  parentId  String?   @db.Uuid
+  name      String
+  slug      String    @unique
+  sortOrder Int       @default(0)
+  isActive  Boolean   @default(true)
+  deletedAt DateTime? @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+
+  parent      Category?    @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children    Category[]   @relation("CategoryTree")
+  experiences Experience[]
+
+  @@index([parentId, isActive, sortOrder])
+  @@index([deletedAt])
+}
+
+model Experience {
+  id                 String           @id @default(uuid()) @db.Uuid
+  guideId            String           @db.Uuid
+  categoryId         String           @db.Uuid
+  destinationId      String           @db.Uuid
+  title              String
+  slug               String           @unique
+  description        String
+  durationMinutes    Int
+  price              Decimal          @db.Decimal(12, 2)
+  currency           String           @db.Char(3)
+  maxGuests          Int
+  meetingPoint       String?
+  pickupAvailable    Boolean          @default(false)
+  pickupInformation  String?
+  inclusions         String[]         @default([])
+  exclusions         String[]         @default([])
+  requirements       String[]         @default([])
+  cancellationPolicy String
+  status             ExperienceStatus @default(DRAFT)
+  featured           Boolean          @default(false)
+  deletedAt          DateTime?        @db.Timestamptz(3)
+  createdAt          DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime         @updatedAt @db.Timestamptz(3)
+
+  guide         GuideProfile      @relation(fields: [guideId], references: [id], onDelete: Restrict)
+  category      Category          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  destination   Destination       @relation(fields: [destinationId], references: [id], onDelete: Restrict)
+  images        ExperienceImage[]
+  availability  Availability[]
+  bookings      Booking[]
+  reviews       Review[]          @relation("ReviewExperience")
+  wishlistItems Wishlist[]
+
+  @@index([status, featured, deletedAt])
+  @@index([destinationId, status])
+  @@index([categoryId, status])
+  @@index([guideId, status])
+  @@index([price, durationMinutes])
+}
+
+model ExperienceImage {
+  id           String   @id @default(uuid()) @db.Uuid
+  experienceId String   @db.Uuid
+  storageKey   String   @unique
+  altText      String
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+
+  @@index([experienceId, sortOrder])
+}
+
+model Availability {
+  id                String   @id @default(uuid()) @db.Uuid
+  experienceId      String   @db.Uuid
+  date              DateTime @db.Date
+  timeSlot          String   @default("ALL_DAY")
+  availableSlots    Int
+  remainingCapacity Int
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @db.Timestamptz(3)
+
+  experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+  bookings   Booking[]
+
+  @@unique([experienceId, date, timeSlot])
+  @@index([date, remainingCapacity])
+  @@index([experienceId, date, timeSlot, remainingCapacity])
+}
+
+model Booking {
+  id             String        @id @default(uuid()) @db.Uuid
+  idempotencyKeyHash String     @unique
+  requestHash    String
+  customerId     String        @db.Uuid
+  guideId        String        @db.Uuid
+  experienceId   String        @db.Uuid
+  availabilityId String?       @db.Uuid
+  experienceDate DateTime      @db.Timestamptz(3)
+  travellerCount Int
+  adultsCount    Int
+  childrenCount  Int
+  timeSlot       String
+  totalPrice     Decimal       @db.Decimal(12, 2)
+  currency       String        @db.Char(3)
+  status         BookingStatus @default(PENDING)
+  /// Aggregate collection state for this booking; individual attempts live in Payment.
+  paymentStatus  PaymentStatus @default(PENDING)
+  reservationExpiresAt DateTime? @db.Timestamptz(3)
+  createdAt      DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime      @updatedAt @db.Timestamptz(3)
+
+  customer     User           @relation("BookingCustomer", fields: [customerId], references: [id], onDelete: Restrict)
+  guide        GuideProfile   @relation("BookingGuide", fields: [guideId], references: [id], onDelete: Restrict)
+  experience   Experience     @relation(fields: [experienceId], references: [id], onDelete: Restrict)
+  availability Availability?  @relation(fields: [availabilityId], references: [id], onDelete: Restrict)
+  guests       BookingGuest[]
+  payments     Payment[]
+  payout       Payout?
+  review       Review?
+
+  /// Supports a composite FK from Review so its denormalized lookup keys match the booking.
+  @@unique([id, customerId, guideId, experienceId], name: "booking_review_identity")
+  /// Supports a composite FK from Payout so its guide matches the booking's guide.
+  @@unique([id, guideId], name: "booking_guide_identity")
+  @@index([customerId, status, experienceDate])
+  @@index([guideId, status, experienceDate])
+  @@index([experienceId, experienceDate])
+  @@index([status, createdAt])
+  @@index([paymentStatus, createdAt])
+  @@index([status, paymentStatus, reservationExpiresAt])
+  @@index([availabilityId, status, paymentStatus])
+}
+
+model BookingGuest {
+  id        String   @id @default(uuid()) @db.Uuid
+  bookingId String   @db.Uuid
+  fullName  String
+  email     String?
+  phone     String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+}
+
+model Payment {
+  id                    String          @id @default(uuid()) @db.Uuid
+  bookingId             String          @db.Uuid
+  provider              PaymentProvider @default(PAYFAST)
+  providerTransactionId String?         @unique
+  paymentReference      String          @unique
+  amount                Decimal         @db.Decimal(12, 2)
+  currency              String          @db.Char(3)
+  status                PaymentStatus   @default(PENDING)
+  metadata              Json?
+  paidAt                DateTime?       @db.Timestamptz(3)
+  createdAt             DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime        @updatedAt @db.Timestamptz(3)
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  @@index([bookingId, status])
+  @@index([status, createdAt])
+}
+
+model Payout {
+  id           String       @id @default(uuid()) @db.Uuid
+  bookingId    String       @unique @db.Uuid
+  guideId      String       @db.Uuid
+  amount       Decimal      @db.Decimal(12, 2)
+  currency     String       @db.Char(3)
+  status       PayoutStatus @default(PENDING)
+  eftReference String?      @unique
+  paidAt       DateTime?    @db.Timestamptz(3)
+  createdAt    DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime     @updatedAt @db.Timestamptz(3)
+
+  booking Booking      @relation(fields: [bookingId, guideId], references: [id, guideId], onDelete: Restrict)
+  guide   GuideProfile @relation(fields: [guideId], references: [id], onDelete: Restrict)
+
+  @@unique([bookingId, guideId], name: "payout_booking_guide_identity")
+  @@index([guideId, status, createdAt])
+  @@index([status, paidAt])
+}
+
+model Review {
+  id           String       @id @default(uuid()) @db.Uuid
+  bookingId    String       @unique @db.Uuid
+  customerId   String       @db.Uuid
+  guideId      String       @db.Uuid
+  experienceId String       @db.Uuid
+  rating       Int
+  reviewText   String
+  status       ReviewStatus @default(PENDING)
+  moderatedAt  DateTime?    @db.Timestamptz(3)
+  deletedAt    DateTime?    @db.Timestamptz(3)
+  createdAt    DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime     @updatedAt @db.Timestamptz(3)
+
+  /// Composite relation ensures the customer, guide, and experience match the reviewed booking.
+  booking    Booking      @relation(fields: [bookingId, customerId, guideId, experienceId], references: [id, customerId, guideId, experienceId], onDelete: Restrict)
+  customer   User         @relation("ReviewCustomer", fields: [customerId], references: [id], onDelete: Restrict)
+  guide      GuideProfile @relation("ReviewGuide", fields: [guideId], references: [id], onDelete: Restrict)
+  experience Experience   @relation("ReviewExperience", fields: [experienceId], references: [id], onDelete: Restrict)
+
+  @@unique([bookingId, customerId, guideId, experienceId], name: "review_booking_identity")
+  @@index([guideId, status, deletedAt, createdAt])
+  @@index([experienceId, status, deletedAt, createdAt])
+  @@index([customerId, createdAt])
+}
+
+model CustomRequest {
+  id                  String              @id @default(uuid()) @db.Uuid
+  customerId          String              @db.Uuid
+  assignedGuideId     String?             @db.Uuid
+  destinationId       String?             @db.Uuid
+  destinationText     String
+  travelStartDate     DateTime?           @db.Date
+  travelEndDate       DateTime?           @db.Date
+  flexibleDates       Boolean             @default(false)
+  travellerCount      Int
+  budget              Decimal?            @db.Decimal(12, 2)
+  budgetCurrency      String?             @db.Char(3)
+  interests           String[]            @default([])
+  accommodationNeeded Boolean             @default(false)
+  transportNeeded     Boolean             @default(false)
+  languages           String[]            @default([])
+  notes               String?
+  quotedAmount        Decimal?            @db.Decimal(12, 2)
+  quotedCurrency      String?             @db.Char(3)
+  status              CustomRequestStatus @default(SUBMITTED)
+  createdAt           DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime            @updatedAt @db.Timestamptz(3)
+
+  customer      User           @relation("CustomRequestCustomer", fields: [customerId], references: [id], onDelete: Restrict)
+  assignedGuide GuideProfile?  @relation("CustomRequestGuide", fields: [assignedGuideId], references: [id], onDelete: SetNull)
+  destination   Destination?   @relation(fields: [destinationId], references: [id], onDelete: SetNull)
+  replies       RequestReply[]
+
+  @@index([customerId, status, createdAt])
+  @@index([assignedGuideId, status])
+  @@index([destinationId, travelStartDate])
+  @@index([status, createdAt])
+}
+
+model RequestReply {
+  id              String   @id @default(uuid()) @db.Uuid
+  customRequestId String   @db.Uuid
+  senderId        String   @db.Uuid
+  body            String
+  createdAt       DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(3)
+
+  customRequest CustomRequest @relation(fields: [customRequestId], references: [id], onDelete: Cascade)
+  sender        User          @relation(fields: [senderId], references: [id], onDelete: Restrict)
+
+  @@index([customRequestId, createdAt])
+  @@index([senderId, createdAt])
+}
+
+model Wishlist {
+  id           String   @id @default(uuid()) @db.Uuid
+  customerId   String   @db.Uuid
+  experienceId String   @db.Uuid
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  customer   User       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  experience Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, experienceId])
+  @@index([experienceId, createdAt])
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?
+  readAt    DateTime?        @db.Timestamptz(3)
+  createdAt DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime         @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+  @@index([type, createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @db.Uuid
+  action    String
+  entity    String
+  entityId  String
+  metadata  Json?
+  ipAddress String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([entity, entityId, createdAt])
+  @@index([action, createdAt])
+}
+
+model Setting {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  value       Json
+  description String?
+  updatedById String?  @db.Uuid
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  updatedBy User? @relation("SettingUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([updatedById])
+}
