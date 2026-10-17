@@ -50,7 +50,7 @@ npm run db:generate
 npm run db:migrate
 ```
 
-`db:migrate` runs Prisma Migrate interactively against the configured development database. The generated client is written to `src/server/db/generated/` and is not committed.
+`db:migrate` runs Prisma Migrate interactively against the configured development database. The generated client is written to `src/server/db/generated/` and is not committed. The production build runs `prisma generate` before `next build`, so `DATABASE_URL` must also be configured in the build environment.
 
 For a fresh production database, apply committed migrations with `npx prisma migrate deploy`. Existing databases that were created without migration history must be reviewed and baselined before deployment; do not apply the initial migration over an untracked populated schema.
 
