@@ -25,7 +25,7 @@ export async function generateMetadata({
   }
 
   return publicPageMetadata({
-    title: `${data.title} | Nomsa Tour Guides`,
+    title: data.title,
     description: data.tagline ?? `${data.category} experience in ${data.destination}, ${data.province}.`,
     path: `/experiences/${slug}`,
   });

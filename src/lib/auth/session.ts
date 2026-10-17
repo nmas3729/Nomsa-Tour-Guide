@@ -19,6 +19,7 @@ export async function getServerSession(): Promise<Session | null> {
     name: user.name,
     role: user.role,
     sessionVersion: user.sessionVersion,
+    mfaVerified: user.mfaVerified,
   });
 
   if (!principal) {

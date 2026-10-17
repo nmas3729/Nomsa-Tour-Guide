@@ -31,6 +31,10 @@ export interface BookingRecordSummary {
   currency: string;
   status: BookingStatus;
   paymentStatus: PaymentStatus;
+  paidAmount?: number | null;
+  paidCurrency?: string | null;
+  paidAt?: string | null;
+  invoiceEmailStatus?: "SENDING" | "SENT" | "FAILED" | null;
   meetingPoint: string;
   createdAt: string;
 }
@@ -67,7 +71,7 @@ function cents(value: string | number): string | null {
   return `${whole.replace(/^0+(?=\d)/, "")}.${fraction.padEnd(2, "0")}`;
 }
 
-function bookingSummary(booking: {
+export function toBookingRecordSummary(booking: {
   id: string;
   experienceDate: Date;
   travellerCount: number;
@@ -90,12 +94,27 @@ function bookingSummary(booking: {
   };
   guide: { user: { name: string } };
   guests: Array<{ fullName: string; email: string | null }>;
-  payments: Array<{ paymentReference: string }>;
+  payments: Array<{
+    paymentReference: string;
+    status: PaymentStatus;
+    amount: Prisma.Decimal;
+    currency: string;
+    paidAt: Date | null;
+    metadata: Prisma.JsonValue | null;
+  }>;
 }): BookingRecordSummary {
   const lead = booking.guests[0];
+  const successfulPayment = booking.payments.find((payment) => payment.status === PaymentStatus.SUCCEEDED);
+  const metadata =
+    successfulPayment?.metadata &&
+    typeof successfulPayment.metadata === "object" &&
+    !Array.isArray(successfulPayment.metadata)
+      ? successfulPayment.metadata
+      : null;
+  const invoiceEmailStatus = metadata?.invoiceEmailStatus;
   return {
     id: booking.id,
-    reference: booking.payments[0]?.paymentReference ?? "",
+    reference: successfulPayment?.paymentReference ?? booking.payments[0]?.paymentReference ?? "",
     experienceTitle: booking.experience.title,
     experienceSlug: booking.experience.slug,
     guideName: booking.guide.user.name,
@@ -111,16 +130,34 @@ function bookingSummary(booking: {
     currency: booking.currency,
     status: booking.status,
     paymentStatus: booking.paymentStatus,
+    paidAmount: successfulPayment ? Number(successfulPayment.amount) : null,
+    paidCurrency: successfulPayment?.currency ?? null,
+    paidAt: successfulPayment?.paidAt?.toISOString() ?? null,
+    invoiceEmailStatus:
+      invoiceEmailStatus === "SENDING" ||
+      invoiceEmailStatus === "SENT" ||
+      invoiceEmailStatus === "FAILED"
+        ? invoiceEmailStatus
+        : null,
     meetingPoint: booking.experience.meetingPoint ?? "Meeting point confirmed with host",
     createdAt: booking.createdAt.toISOString(),
   };
 }
 
-const bookingInclude = {
+export const bookingInclude = {
   experience: { include: { destination: { include: { city: { include: { province: true } } } } } },
   guide: { include: { user: true } },
   guests: true,
-  payments: true,
+  payments: {
+    select: {
+      paymentReference: true,
+      status: true,
+      amount: true,
+      currency: true,
+      paidAt: true,
+      metadata: true,
+    },
+  },
 } satisfies Prisma.BookingInclude;
 
 function payFastPayloadFor(booking: {
@@ -334,7 +371,7 @@ export async function createBooking(input: CreateBookingInput, idempotencyKey: s
   });
 
   return {
-    booking: bookingSummary(booking),
+    booking: toBookingRecordSummary(booking),
     payfast: payFastPayloadFor(booking, appUrl),
   };
 }
@@ -602,5 +639,5 @@ export async function getBookingConfirmation(
     where: { id: bookingId, idempotencyKeyHash: hash(idempotencyKey) },
     include: bookingInclude,
   });
-  return booking ? bookingSummary(booking) : null;
+  return booking ? toBookingRecordSummary(booking) : null;
 }

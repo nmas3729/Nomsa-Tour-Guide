@@ -17,7 +17,15 @@ import {
   hashOpaqueToken,
 } from "@/src/features/auth/lib/tokens";
 import { sendPasswordResetEmail, sendVerificationEmail, sendWelcomeEmail } from "./email";
+import { sendGuideApplicationReviewEmail } from "./guide-application-email";
 import type { AuthenticatedPrincipal } from "@/src/features/auth/types";
+import { requiresAuthenticatorApp } from "@/src/features/auth/lib/privileged-mfa";
+import { decryptTotpSecret, encryptTotpSecret } from "@/src/features/auth/lib/totp-crypto";
+import {
+  authenticatorSetupDetails,
+  generateTotpSecret,
+  verifyTotpCode,
+} from "@/src/features/auth/lib/totp";
 
 export class InvalidAuthTokenError extends Error {
   constructor() {
@@ -30,6 +38,13 @@ export class InvalidCredentialsError extends Error {
   constructor() {
     super("Your current password is incorrect.");
     this.name = "InvalidCredentialsError";
+  }
+}
+
+export class InvalidAuthenticatorCodeError extends Error {
+  constructor() {
+    super("Enter a valid code from your authenticator app.");
+    this.name = "InvalidAuthenticatorCodeError";
   }
 }
 
@@ -68,6 +83,8 @@ export async function registerAccount(input: RegistrationInput) {
 
   const values = parsed.data;
   const prisma = getPrismaClient();
+  const guideApplication =
+    values.role === UserRole.GUIDE ? guideRegistrationSchema.parse(values) : null;
 
   try {
     const passwordHash = await hashPassword(values.password);
@@ -87,7 +104,10 @@ export async function registerAccount(input: RegistrationInput) {
         });
       }
 
-      const guide = guideRegistrationSchema.parse(values);
+      const guide = guideApplication;
+      if (!guide) {
+        throw new Error("Guide registration details are missing.");
+      }
       return transaction.user.create({
         data: {
           name: guide.name,
@@ -128,22 +148,36 @@ export async function registerAccount(input: RegistrationInput) {
       });
     });
 
+    let reviewEmailSent = false;
+    if (guideApplication) {
+      try {
+        await sendGuideApplicationReviewEmail(guideApplication);
+        reviewEmailSent = true;
+      } catch (error) {
+        createAuthEventLogger("guide_application.email_failed", {
+          errorName: error instanceof Error ? error.name : "UnknownError",
+        });
+      }
+    }
+
     const token = await issueAuthToken(user.id, AuthTokenType.EMAIL_VERIFICATION);
     await sendVerificationEmail(values.name, values.email, token);
     createAuthEventLogger("registration", { outcome: "created", role: values.role });
 
     return {
       success: true as const,
-      message:
-        "If this email can be registered, a verification link will arrive shortly. Guide applications remain pending until approved.",
+      message: guideApplication
+        ? reviewEmailSent
+          ? "Your guide application has been submitted for manual review. The Nomsa team will share next steps after reviewing it. Submission does not guarantee approval or publication."
+          : "Your guide application is saved as pending review, but delivery to the review inbox could not be confirmed. Please contact us if you do not receive your email verification link."
+        : "If this email can be registered, a verification link will arrive shortly.",
     };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       createAuthEventLogger("registration", { outcome: "duplicate_email" });
       return {
         success: true as const,
-        message:
-          "If this email can be registered, a verification link will arrive shortly. Guide applications remain pending until approved.",
+        message: "If this email can be registered, a verification link will arrive shortly.",
       };
     }
 
@@ -303,6 +337,9 @@ export async function changeAccountPassword(
   currentPassword: string,
   nextPassword: string,
 ) {
+  if (requiresAuthenticatorApp(principal.role) && !principal.mfaVerified) {
+    throw new Error("Two-factor authentication is required for this account.");
+  }
   const prisma = getPrismaClient();
   const user = await prisma.user.findUnique({
     where: { id: principal.id },
@@ -327,10 +364,13 @@ export async function changeAccountPassword(
   createAuthEventLogger("password_change", { outcome: "success", userId: user.id });
 }
 
-export async function authenticateCredentials(email: string, password: string) {
-  const user = await getPrismaClient().user.findUnique({
+export async function authenticateCredentials(email: string, password: string, totpCode?: string) {
+  const prisma = getPrismaClient();
+  const user = await prisma.user.findUnique({
     where: { email },
-    include: { guideProfile: { select: { verificationStatus: true } } },
+    include: {
+      guideProfile: { select: { verificationStatus: true } },
+    },
   });
 
   if (
@@ -351,13 +391,44 @@ export async function authenticateCredentials(email: string, password: string) {
     return null;
   }
 
-  createAuthEventLogger("login", { outcome: "success", userId: user.id, role: user.role });
+  const privileged = requiresAuthenticatorApp(user.role);
+  let mfaVerified = false;
+  if (privileged && user.totpEnabledAt) {
+    if (!user.totpSecretEncrypted || !totpCode) {
+      throw new InvalidAuthenticatorCodeError();
+    }
+    const secret = decryptTotpSecret(user.totpSecretEncrypted);
+    const step = verifyTotpCode(secret, totpCode);
+    if (step === null) {
+      createAuthEventLogger("login", { outcome: "invalid_totp", role: user.role });
+      throw new InvalidAuthenticatorCodeError();
+    }
+    const consumed = await prisma.user.updateMany({
+      where: {
+        id: user.id,
+        totpEnabledAt: { not: null },
+        OR: [
+          { totpLastUsedStep: null },
+          { totpLastUsedStep: { lt: BigInt(step) } },
+        ],
+      },
+      data: { totpLastUsedStep: BigInt(step) },
+    });
+    if (consumed.count !== 1) {
+      createAuthEventLogger("login", { outcome: "replayed_totp", role: user.role });
+      throw new InvalidAuthenticatorCodeError();
+    }
+    mfaVerified = true;
+  }
+
+  createAuthEventLogger("login", { outcome: "success", userId: user.id, role: user.role, mfaVerified });
   return {
     id: user.id,
     name: user.name,
     email: user.email,
     role: user.role,
     sessionVersion: user.sessionVersion,
+    mfaVerified,
   };
 }
 
@@ -373,6 +444,7 @@ export async function validateActivePrincipal(principal: AuthenticatedPrincipal)
       emailVerified: true,
       isActive: true,
       deletedAt: true,
+      totpEnabledAt: true,
       guideProfile: { select: { verificationStatus: true } },
     },
   });
@@ -383,6 +455,9 @@ export async function validateActivePrincipal(principal: AuthenticatedPrincipal)
     !user.isActive ||
     user.deletedAt ||
     user.sessionVersion !== principal.sessionVersion ||
+    (requiresAuthenticatorApp(user.role) &&
+      user.totpEnabledAt !== null &&
+      !principal.mfaVerified) ||
     (user.role === UserRole.GUIDE &&
       user.guideProfile?.verificationStatus !== GuideApplicationStatus.APPROVED)
   ) {
@@ -395,5 +470,76 @@ export async function validateActivePrincipal(principal: AuthenticatedPrincipal)
     name: user.name,
     role: user.role,
     sessionVersion: user.sessionVersion,
+    mfaVerified:
+      requiresAuthenticatorApp(user.role) &&
+      principal.mfaVerified &&
+      user.totpEnabledAt !== null,
   } satisfies AuthenticatedPrincipal;
+}
+
+export async function beginAuthenticatorSetup(principal: AuthenticatedPrincipal) {
+  if (!requiresAuthenticatorApp(principal.role)) {
+    throw new Error("Authenticator setup is required only for guide and admin accounts.");
+  }
+
+  const prisma = getPrismaClient();
+  const user = await prisma.user.findUnique({
+    where: { id: principal.id },
+    select: { email: true, totpEnabledAt: true },
+  });
+  if (!user) {
+    throw new Error("Account is unavailable.");
+  }
+  if (user.totpEnabledAt) {
+    throw new Error("Authenticator app verification is already enabled.");
+  }
+
+  const secret = generateTotpSecret();
+  await prisma.user.update({
+    where: { id: principal.id },
+    data: { totpSecretEncrypted: encryptTotpSecret(secret), totpLastUsedStep: null },
+  });
+  createAuthEventLogger("mfa.setup_started", { userId: principal.id });
+  return authenticatorSetupDetails(secret, user.email);
+}
+
+export async function confirmAuthenticatorSetup(
+  principal: AuthenticatedPrincipal,
+  code: string,
+) {
+  if (!requiresAuthenticatorApp(principal.role)) {
+    throw new Error("Authenticator setup is required only for guide and admin accounts.");
+  }
+
+  const prisma = getPrismaClient();
+  const user = await prisma.user.findUnique({
+    where: { id: principal.id },
+    select: { totpSecretEncrypted: true, totpEnabledAt: true },
+  });
+  if (!user || user.totpEnabledAt || !user.totpSecretEncrypted) {
+    throw new InvalidAuthenticatorCodeError();
+  }
+
+  const step = verifyTotpCode(decryptTotpSecret(user.totpSecretEncrypted), code);
+  if (step === null) {
+    createAuthEventLogger("mfa.setup_failed", { userId: principal.id });
+    throw new InvalidAuthenticatorCodeError();
+  }
+
+  const enabled = await prisma.user.updateMany({
+    where: {
+      id: principal.id,
+      totpEnabledAt: null,
+      totpSecretEncrypted: user.totpSecretEncrypted,
+    },
+    data: {
+      totpEnabledAt: new Date(),
+      totpLastUsedStep: BigInt(step),
+      sessionVersion: { increment: 1 },
+    },
+  });
+  if (enabled.count !== 1) {
+    throw new InvalidAuthenticatorCodeError();
+  }
+  createAuthEventLogger("mfa.enabled", { userId: principal.id, role: principal.role });
 }

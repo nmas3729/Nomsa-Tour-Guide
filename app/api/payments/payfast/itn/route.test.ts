@@ -1,13 +1,22 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 import { processPayFastITN } from "@/src/server/services/booking-service";
+import { sendApprovedBookingInvoice } from "@/src/server/services/invoice-email-service";
 
 vi.mock("@/src/server/services/booking-service", () => ({
   getBookingConfirmation: vi.fn(),
   processPayFastITN: vi.fn(),
 }));
+vi.mock("@/src/server/services/invoice-email-service", () => ({
+  sendApprovedBookingInvoice: vi.fn(),
+}));
 
 const processITNMock = vi.mocked(processPayFastITN);
+const sendInvoiceMock = vi.mocked(sendApprovedBookingInvoice);
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 function formRequest(body: string, contentType = "application/x-www-form-urlencoded") {
   return new Request("http://localhost/api/payments/payfast/itn", {
@@ -20,6 +29,7 @@ function formRequest(body: string, contentType = "application/x-www-form-urlenco
 describe("POST /api/payments/payfast/itn", () => {
   it("acknowledges a successfully processed provider notification", async () => {
     processITNMock.mockResolvedValue({ success: true, duplicate: false });
+    sendInvoiceMock.mockResolvedValue(undefined);
 
     const response = await POST(formRequest("payment_status=COMPLETE&m_payment_id=NOM-1"));
 
@@ -30,16 +40,46 @@ describe("POST /api/payments/payfast/itn", () => {
       "payment_status=COMPLETE&m_payment_id=NOM-1",
       null,
     );
+    expect(sendInvoiceMock).toHaveBeenCalledWith("NOM-1");
   });
 
-  it.each([
-    [{ success: true, duplicate: false, latePayment: true }, "late-payment refund transition"],
-    [{ success: true, duplicate: true }, "duplicate notification for a refund state"],
-  ] as const)("acknowledges a processed %2$s", async (result, description) => {
-    expect(description).toMatch(/refund/);
+  it("acknowledges a late-payment refund transition without sending an invoice", async () => {
+    const result = { success: true, duplicate: false, latePayment: true } as const;
     processITNMock.mockResolvedValue(result);
+    sendInvoiceMock.mockResolvedValue(undefined);
+
+    const response = await POST(formRequest("payment_status=COMPLETE&m_payment_id=NOM-LATE"));
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("OK");
+    expect(sendInvoiceMock).not.toHaveBeenCalled();
+  });
+
+  it("checks invoice delivery again on duplicate completion notifications", async () => {
+    processITNMock.mockResolvedValue({ success: true, duplicate: true });
+    sendInvoiceMock.mockResolvedValue(undefined);
 
     const response = await POST(formRequest("payment_status=COMPLETE&m_payment_id=NOM-REFUND"));
+
+    expect(response.status).toBe(200);
+    expect(sendInvoiceMock).toHaveBeenCalledWith("NOM-REFUND");
+  });
+
+  it("does not send invoice email for failed payments", async () => {
+    processITNMock.mockResolvedValue({ success: true, duplicate: false });
+    sendInvoiceMock.mockResolvedValue(undefined);
+
+    const response = await POST(formRequest("payment_status=FAILED&m_payment_id=NOM-FAILED"));
+
+    expect(response.status).toBe(200);
+    expect(sendInvoiceMock).not.toHaveBeenCalled();
+  });
+
+  it("still acknowledges an approved payment if invoice delivery fails", async () => {
+    processITNMock.mockResolvedValue({ success: true, duplicate: false });
+    sendInvoiceMock.mockRejectedValue(new Error("Resend unavailable"));
+
+    const response = await POST(formRequest("payment_status=COMPLETE&m_payment_id=NOM-1"));
 
     expect(response.status).toBe(200);
     expect(await response.text()).toBe("OK");

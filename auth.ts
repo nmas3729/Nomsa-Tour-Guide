@@ -7,11 +7,19 @@ import { getPrismaClient } from "@/src/server/db/prisma";
 import { enforceAuthRateLimits, RateLimitExceededError } from "@/src/features/auth/lib/rate-limit";
 import { createAuthEventLogger } from "@/src/features/auth/lib/tokens";
 import { loginSchema } from "@/src/features/auth/schemas";
-import { authenticateCredentials } from "@/src/features/auth/services/authentication";
+import {
+  authenticateCredentials,
+  InvalidAuthenticatorCodeError,
+} from "@/src/features/auth/services/authentication";
 import { isRouteRoleAllowed, protectedRouteRoles } from "@/src/lib/auth/route-access";
+import { canAccessMfaProtectedSurface } from "@/src/features/auth/lib/privileged-mfa";
 
 class LoginRateLimitedSignin extends CredentialsSignin {
   code = "rate_limited";
+}
+
+class InvalidAuthenticatorSignin extends CredentialsSignin {
+  code = "invalid_authenticator_code";
 }
 
 function createAuthConfig(): NextAuthConfig {
@@ -49,6 +57,7 @@ function createAuthConfig(): NextAuthConfig {
         credentials: {
           email: { label: "Email", type: "email" },
           password: { label: "Password", type: "password" },
+          totpCode: { label: "Authenticator code", type: "text" },
         },
         async authorize(credentials, request) {
           const parsed = loginSchema.safeParse(credentials);
@@ -80,26 +89,45 @@ function createAuthConfig(): NextAuthConfig {
             throw error;
           }
 
-          return authenticateCredentials(parsed.data.email, parsed.data.password);
+          try {
+            return await authenticateCredentials(
+              parsed.data.email,
+              parsed.data.password,
+              parsed.data.totpCode || undefined,
+            );
+          } catch (error) {
+            if (error instanceof InvalidAuthenticatorCodeError) {
+              throw new InvalidAuthenticatorSignin();
+            }
+            throw error;
+          }
         },
       }),
     ],
     callbacks: {
       async authorized({ auth, request }) {
         const roles = protectedRouteRoles(request.nextUrl.pathname);
+        const isMfaSetupPath = request.nextUrl.pathname === "/account/security/two-factor";
+        const role = auth?.user?.role;
         return roles === null
           ? true
-          : Boolean(auth?.user && isRouteRoleAllowed(roles, auth.user.role));
+          : Boolean(
+              auth?.user &&
+              isRouteRoleAllowed(roles, role) &&
+              canAccessMfaProtectedSurface(role, auth.user.mfaVerified, isMfaSetupPath),
+            );
       },
       async jwt({ token, user }) {
         if (user) {
           const authenticatedUser = user as typeof user & {
             role: UserRole;
             sessionVersion: number;
+            mfaVerified: boolean;
           };
           token.sub = authenticatedUser.id;
           token.role = authenticatedUser.role;
           token.sessionVersion = authenticatedUser.sessionVersion;
+          token.mfaVerified = authenticatedUser.mfaVerified;
         }
 
         return token;
@@ -109,6 +137,7 @@ function createAuthConfig(): NextAuthConfig {
           session.user.id = token.sub;
           session.user.role = token.role;
           session.user.sessionVersion = token.sessionVersion ?? 0;
+          session.user.mfaVerified = token.mfaVerified ?? false;
         }
 
         return session;

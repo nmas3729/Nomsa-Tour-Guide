@@ -5,9 +5,10 @@ import { AuthShell } from "@/src/features/auth/components/auth-ui";
 import { ResetPasswordForm } from "@/src/features/auth/components/auth-forms";
 
 export const metadata: Metadata = {
-  title: "Reset password | Nomsa Tour Guides",
+  title: "Reset password",
   description: "Set a new password for your account.",
   referrer: "no-referrer",
+  robots: { index: false, follow: false },
 };
 
 async function ResetPasswordContent({

@@ -4,8 +4,8 @@ import { PublicLayout } from "@/src/components/marketing/public-layout";
 import { publicPageMetadata } from "@/src/lib/seo";
 
 export const metadata: Metadata = publicPageMetadata({
-  title: "Explore Destinations in South Africa",
-  description: "Explore South African coastlines, mountains, wildlife, food and heritage across all nine provinces.",
+  title: "South Africa Destinations",
+  description: "Browse coastlines, mountains, wildlife, food, and heritage across nine provinces.",
   path: "/destinations",
 });
 

@@ -4,6 +4,7 @@ import { getServerEnvironment } from "@/src/config/env";
 import { imageUploadSchema, MAX_UPLOAD_FILE_SIZE } from "@/src/features/uploads/schemas";
 import { isSameOriginRequest } from "@/src/lib/security/origin";
 import { ImageUploadError, uploadImageForUser } from "@/src/server/services/image-upload-service";
+import { hasVerifiedAuthenticator } from "@/src/features/auth/lib/privileged-mfa";
 
 const MAX_REQUEST_SIZE = MAX_UPLOAD_FILE_SIZE + 32_768;
 
@@ -48,6 +49,12 @@ export async function POST(request: Request) {
   const principal = await getCurrentUser();
   if (!principal) {
     return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
+  }
+  if (!hasVerifiedAuthenticator(principal)) {
+    return NextResponse.json(
+      { error: "Two-factor authentication is required for this account." },
+      { status: 403 },
+    );
   }
 
   const contentLength = Number(request.headers.get("content-length") ?? 0);

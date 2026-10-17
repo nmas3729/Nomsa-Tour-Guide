@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Clock3,
   CreditCard,
+  Download,
   MapPin,
   Users,
 } from "lucide-react";
@@ -21,6 +22,7 @@ import type { BookingRecordSummary } from "@/src/server/services/booking-service
 import {
   bookingStatusLabel,
   confirmationMessage,
+  isInvoiceAvailable,
   isPaymentRecordedForBooking,
   paymentStatusLabel,
   refundStateForBooking,
@@ -109,6 +111,7 @@ export function BookingConfirmationView() {
 
   const message = confirmationMessage(booking);
   const paymentRecordedForBooking = isPaymentRecordedForBooking(booking);
+  const invoiceAvailable = isInvoiceAvailable(booking);
   const refundState = refundStateForBooking(booking);
   const refundCopy = refundStatusCopy(refundState);
   const showRefundSection = refundState !== "none";
@@ -177,6 +180,35 @@ export function BookingConfirmationView() {
                   </p>
                   <p className="mt-1.5 text-sm font-semibold text-foreground">{refundCopy.title}</p>
                   <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{refundCopy.description}</p>
+                </section>
+              ) : null}
+
+              {invoiceAvailable ? (
+                <section
+                  aria-label="Invoice"
+                  className="mt-5 flex flex-col gap-4 rounded-2xl border border-border/60 bg-secondary/40 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
+                >
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                      Invoice
+                    </p>
+                    <p className="mt-1.5 text-sm font-semibold text-foreground">Invoice PDF available</p>
+                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                      {booking.invoiceEmailStatus === "SENT"
+                        ? `Invoice emailed to ${booking.leadEmail || "the booking email address"}.`
+                        : booking.invoiceEmailStatus === "FAILED"
+                          ? "Invoice email delivery failed. You can download the PDF here."
+                          : booking.invoiceEmailStatus === "SENDING"
+                            ? "Invoice email delivery is in progress."
+                            : "Email delivery has not been confirmed. You can download the PDF here."}
+                    </p>
+                  </div>
+                  <Button asChild className="shrink-0 rounded-full">
+                    <a download href={`/api/bookings/${booking.id}/invoice`}>
+                      Download PDF
+                      <Download aria-hidden="true" className="size-4" />
+                    </a>
+                  </Button>
                 </section>
               ) : null}
 

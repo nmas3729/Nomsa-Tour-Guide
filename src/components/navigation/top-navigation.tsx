@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowRight, Compass, Menu } from "lucide-react";
+import { ArrowRight, Menu, X } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { ThemeToggle } from "@/src/components/ui/theme-toggle";
-import { Drawer, DrawerContent, DrawerTitle, DrawerTrigger } from "@/src/components/ui/drawer";
 import { BrandMark } from "@/src/components/navigation/brand-mark";
 import { cn } from "@/src/lib/utils";
 
@@ -36,6 +35,118 @@ function Brand({ isTransparent }: { isTransparent: boolean }) {
         Nomsa Tour Guides
       </span>
     </Link>
+  );
+}
+
+function MobileNavigation({
+  isTransparent,
+  pathname,
+}: {
+  isTransparent: boolean;
+  pathname: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) {
+      return;
+    }
+    if (isOpen && !dialog.open) {
+      dialog.showModal();
+    } else if (!isOpen && dialog.open) {
+      dialog.close();
+    }
+  }, [isOpen]);
+
+  function closeMenu() {
+    setIsOpen(false);
+  }
+
+  return (
+    <>
+      <Button
+        aria-label="Open navigation menu"
+        className={cn(
+          "xl:hidden",
+          isTransparent && "border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white",
+        )}
+        onClick={() => setIsOpen(true)}
+        size="icon"
+        type="button"
+        variant="outline"
+      >
+        <Menu aria-hidden="true" size={20} />
+      </Button>
+      <dialog
+        aria-labelledby={titleId}
+        className="mobile-navigation-dialog fixed inset-x-0 bottom-0 z-50 m-0 max-h-[90dvh] w-full max-w-none overflow-y-auto rounded-t-3xl border border-border bg-card p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-foreground shadow-xl focus:outline-none xl:hidden"
+        onCancel={(event) => {
+          event.preventDefault();
+          closeMenu();
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            closeMenu();
+          }
+        }}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            closeMenu();
+          }
+        }}
+        ref={dialogRef}
+      >
+        <div className="flex items-center justify-between border-b border-border pb-4">
+          <h2 className="flex items-center gap-3 font-display text-2xl font-bold" id={titleId}>
+            <BrandMark className="size-12 rounded-full object-cover" />
+            Nomsa Tour Guides
+          </h2>
+          <button
+            aria-label="Close navigation menu"
+            className="rounded-full p-2 text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={closeMenu}
+            type="button"
+          >
+            <X aria-hidden="true" size={17} />
+          </button>
+        </div>
+
+        <nav aria-label="Mobile navigation" className="mt-6 grid gap-2">
+          {navLinks.map((link) => {
+            const isActive = pathname === link.href;
+            return (
+              <Link
+                className={cn(
+                  "flex items-center justify-between rounded-xl px-4 py-3.5 text-base font-medium transition-colors",
+                  isActive
+                    ? "bg-primary/10 text-primary font-semibold"
+                    : "text-foreground hover:bg-muted",
+                )}
+                href={link.href}
+                key={link.href}
+                onClick={closeMenu}
+              >
+                <span>{link.label}</span>
+                <ArrowRight aria-hidden="true" className="opacity-40" size={16} />
+              </Link>
+            );
+          })}
+
+          <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-4">
+            <Button asChild size="lg" variant="outline">
+              <Link href="/login" onClick={closeMenu}>Login</Link>
+            </Button>
+            <Button asChild size="lg">
+              <Link href="/register" onClick={closeMenu}>Register</Link>
+            </Button>
+          </div>
+        </nav>
+      </dialog>
+    </>
   );
 }
 
@@ -129,67 +240,7 @@ export function TopNavigation() {
             </Button>
           </div>
 
-          {/* Mobile Menu Slide-Over */}
-          <Drawer>
-            <DrawerTrigger asChild>
-              <Button
-                aria-label="Open navigation menu"
-                className={cn(
-                  "xl:hidden",
-                  isTransparent && "border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white",
-                )}
-                size="icon"
-                variant="outline"
-              >
-                <Menu aria-hidden="true" size={20} />
-              </Button>
-            </DrawerTrigger>
-            <DrawerContent className="xl:hidden">
-              <div className="flex items-center justify-between pb-4 border-b border-border">
-                <DrawerTitle className="flex items-center gap-3 font-display text-2xl font-bold">
-                  <BrandMark className="size-12 rounded-full object-cover" />
-                  Nomsa Tour Guides
-                </DrawerTitle>
-              </div>
-
-              <nav aria-label="Mobile navigation" className="mt-6 grid gap-2">
-                {navLinks.map((link) => {
-                  const isActive = pathname === link.href;
-                  return (
-                    <Link
-                      className={cn(
-                        "flex items-center justify-between rounded-xl px-4 py-3.5 text-base font-medium transition-colors",
-                        isActive
-                          ? "bg-primary/10 text-primary font-semibold"
-                          : "text-foreground hover:bg-muted",
-                      )}
-                      href={link.href}
-                      key={link.href}
-                    >
-                      <span>{link.label}</span>
-                      <ArrowRight aria-hidden="true" className="opacity-40" size={16} />
-                    </Link>
-                  );
-                })}
-
-                <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 gap-3">
-                  <Button asChild size="lg" variant="outline">
-                    <Link href="/login">Login</Link>
-                  </Button>
-                  <Button asChild size="lg">
-                    <Link href="/register">Register</Link>
-                  </Button>
-                </div>
-              </nav>
-
-              <div className="mt-8 flex items-center justify-between border-t border-border pt-4 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5 font-medium">
-                  <Compass aria-hidden="true" size={15} /> South Africa, closer
-                </span>
-                <span>© 2026 Nomsa</span>
-              </div>
-            </DrawerContent>
-          </Drawer>
+          <MobileNavigation isTransparent={isTransparent} pathname={pathname} />
         </div>
       </div>
     </header>

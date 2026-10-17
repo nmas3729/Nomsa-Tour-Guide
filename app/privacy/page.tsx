@@ -16,7 +16,7 @@ export default function Page() {
       <LegalPage
         eyebrow="Your information"
         introduction="This notice explains how Nomsa Tour Guides may handle personal information when you visit the website, create an account, contact us, or apply to become a guide."
-        lastUpdated="16 October 2026"
+        lastUpdated="17 October 2026"
         sections={privacySections}
         title="Privacy notice"
       />

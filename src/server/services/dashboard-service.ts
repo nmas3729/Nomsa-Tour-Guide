@@ -9,6 +9,7 @@ import {
 } from "@/src/server/db/generated/enums";
 import { getPrismaClient } from "@/src/server/db/prisma";
 import type { AuthenticatedPrincipal } from "@/src/features/auth/types";
+import { hasVerifiedAuthenticator } from "@/src/features/auth/lib/privileged-mfa";
 
 const bookingSummary = {
   id: true,
@@ -34,6 +35,9 @@ const bookingSummary = {
 } as const;
 
 export async function getDashboardData(user: AuthenticatedPrincipal) {
+  if (!hasVerifiedAuthenticator(user)) {
+    throw new Error("Two-factor authentication is required for this account.");
+  }
   const prisma = getPrismaClient();
 
   if (user.role === UserRole.CUSTOMER) {
@@ -142,10 +146,17 @@ export async function getDashboardData(user: AuthenticatedPrincipal) {
   }
 
   if (user.role === UserRole.GUIDE) {
-    const profile = await prisma.guideProfile.findUnique({
-      where: { userId: user.id },
-      select: { id: true, verificationStatus: true },
-    });
+    const [profile, application] = await Promise.all([
+      prisma.guideProfile.findUnique({
+        where: { userId: user.id },
+        select: { id: true, verificationStatus: true },
+      }),
+      prisma.guideApplication.findFirst({
+        where: { applicantId: user.id },
+        select: { status: true },
+        orderBy: { submittedAt: "desc" },
+      }),
+    ]);
     if (!profile) {
       throw new Error("The signed-in guide does not have a guide profile.");
     }
@@ -243,7 +254,7 @@ export async function getDashboardData(user: AuthenticatedPrincipal) {
 
     return {
       role: UserRole.GUIDE,
-      verificationStatus: profile.verificationStatus,
+      applicationStatus: application?.status ?? profile.verificationStatus,
       upcomingBookings,
       upcomingBookingCount,
       attentionBookings,

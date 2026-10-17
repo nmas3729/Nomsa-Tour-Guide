@@ -4,9 +4,10 @@ import { AuthShell } from "@/src/features/auth/components/auth-ui";
 import { VerifyEmailForm } from "@/src/features/auth/components/auth-forms";
 
 export const metadata: Metadata = {
-  title: "Verify email | Nomsa Tour Guides",
+  title: "Verify email",
   description: "Verify your email or request a new verification link.",
   referrer: "no-referrer",
+  robots: { index: false, follow: false },
 };
 
 async function VerifyEmailContent({

@@ -14,7 +14,6 @@ import {
   Search,
   SlidersHorizontal,
   Sparkles,
-  Star,
   UsersRound,
   X,
 } from "lucide-react";
@@ -27,25 +26,43 @@ import { categories, destinations, experiences, provinces } from "@/src/data/pub
 import { cn } from "@/src/lib/utils";
 
 const sortOptions = [
-  { label: "Most Popular", value: "popular" },
-  { label: "Highest Rated", value: "rating" },
+  { label: "Default order", value: "default" },
   { label: "Price: Low to High", value: "price_asc" },
   { label: "Price: High to Low", value: "price_desc" },
 ];
 
 const languageOptions = ["English", "isiXhosa", "isiZulu", "Afrikaans", "French", "German"];
 
-export function ExperiencesListing() {
+type ExperiencesListingProps = {
+  availabilityDate: string;
+  availabilityGuestCount: number;
+  availabilitySearchError?: string;
+  availableExperienceSlugs?: string[];
+  minimumDate: string;
+};
+
+export function ExperiencesListing({
+  availabilityDate,
+  availabilityGuestCount,
+  availabilitySearchError,
+  availableExperienceSlugs,
+  minimumDate,
+}: ExperiencesListingProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
-  const [selectedDestination, setSelectedDestination] = useState<string>("");
   const searchParams = useSearchParams();
   const queryString = searchParams.toString();
+  const requestedDestination = searchParams.get("destination") ?? "";
+  const [destinationSelection, setDestinationSelection] = useState<{ query: string; value: string } | null>(null);
+  const selectedDestination =
+    destinationSelection?.query === queryString ? destinationSelection.value : requestedDestination;
+  const setSelectedDestination = (destination: string) =>
+    setDestinationSelection({ query: queryString, value: destination });
   const [provinceSelection, setProvinceSelection] = useState<{ query: string; province: string } | null>(null);
   const requestedProvince = searchParams.get("province");
   const urlProvince = provinces.find((province) => province === requestedProvince) ?? "";
   const selectedProvince = provinceSelection?.query === queryString ? provinceSelection.province : urlProvince;
   const setSelectedProvince = (province: string) => setProvinceSelection({ query: queryString, province });
-  const [selectedSort, setSelectedSort] = useState<string>("popular");
+  const [selectedSort, setSelectedSort] = useState<string>("default");
   const [showMap, setShowMap] = useState<boolean>(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState<boolean>(false);
   const [priceRange, setPriceRange] = useState<number>(3000);
@@ -57,6 +74,9 @@ export function ExperiencesListing() {
 
   // Filter experiences based on state
   const filteredExperiences = experiences.filter((item) => {
+    if (availableExperienceSlugs && !availableExperienceSlugs.includes(item.slug)) {
+      return false;
+    }
     if (selectedCategory !== "All" && item.category !== selectedCategory) {
       return false;
     }
@@ -73,15 +93,12 @@ export function ExperiencesListing() {
   });
   const sortedExperiences = [...filteredExperiences].sort((first, second) => {
     switch (selectedSort) {
-      case "rating":
-        return second.rating - first.rating || second.reviewCount - first.reviewCount;
       case "price_asc":
         return first.price - second.price;
       case "price_desc":
         return second.price - first.price;
-      case "popular":
       default:
-        return second.reviewCount - first.reviewCount;
+        return 0;
     }
   });
 
@@ -91,21 +108,21 @@ export function ExperiencesListing() {
       <section className="experiences-hero relative isolate overflow-hidden border-b border-border/70 py-16 text-white sm:py-20">
         <Container>
           <div className="mx-auto max-w-3xl text-center">
-            <span className="experiences-kicker inline-block rounded-full px-4 py-1 text-xs font-bold uppercase tracking-[0.24em] text-accent">
-              South African Journeys
-            </span>
             <h1 className="experiences-heading mt-4 font-display text-4xl font-medium tracking-tight sm:text-5xl lg:text-6xl">
-              Curated Local Experiences
+              Find an experience
             </h1>
             <p className="mt-4 text-base leading-relaxed text-white/80 sm:text-lg">
-              Discover South Africa through its nine provinces: coastal wilderness, mountain air, wildlife, living heritage, and memorable local food.
+              Walks, safaris, tastings, and cultural tours led by local guides.
             </p>
           </div>
 
           {/* Floating Search Bar */}
-          <div
+          <form
+            action="/experiences"
             aria-label="Search and filter experiences"
             className="experiences-search mx-auto mt-12 grid max-w-5xl gap-2.5 rounded-3xl border p-3 text-white shadow-2xl backdrop-blur-xl sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1fr_1fr_auto] lg:items-center lg:rounded-full lg:p-2.5"
+            key={queryString}
+            method="get"
             role="search"
           >
             {/* Destination */}
@@ -118,6 +135,7 @@ export function ExperiencesListing() {
                 <input
                   className="experiences-search-input w-full border-0 bg-transparent p-0 text-sm font-semibold text-white outline-none placeholder:text-white/50 focus-visible:ring-0"
                   id="filter-destination"
+                  name="destination"
                   onChange={(e) => setSelectedDestination(e.target.value)}
                   placeholder="Any destination"
                   type="text"
@@ -137,6 +155,9 @@ export function ExperiencesListing() {
                   aria-label="When"
                   className="experiences-search-input w-full border-0 bg-transparent p-0 text-sm font-semibold text-white outline-none focus-visible:ring-0"
                   id="filter-date"
+                  min={minimumDate}
+                  name="date"
+                  defaultValue={availabilityDate}
                   type="date"
                 />
               </div>
@@ -152,13 +173,19 @@ export function ExperiencesListing() {
                 <select
                   aria-label="Guests"
                   className="experiences-search-input w-full appearance-none border-0 bg-transparent p-0 text-sm font-semibold text-white outline-none focus-visible:ring-0"
-                  defaultValue="2"
+                  defaultValue={
+                    availabilityGuestCount >= 1 && availabilityGuestCount <= 10
+                      ? String(availabilityGuestCount)
+                      : "2"
+                  }
                   id="filter-guests"
+                  name="guests"
                 >
-                  <option className="bg-[#0d1117] text-white" value="1">1 Guest</option>
-                  <option className="bg-[#0d1117] text-white" value="2">2 Guests</option>
-                  <option className="bg-[#0d1117] text-white" value="4">3–5 Guests</option>
-                  <option className="bg-[#0d1117] text-white" value="6">6+ Guests</option>
+                  {Array.from({ length: 10 }, (_, index) => index + 1).map((guestCount) => (
+                    <option className="bg-[#0d1117] text-white" key={guestCount} value={guestCount}>
+                      {guestCount} {guestCount === 1 ? "Guest" : "Guests"}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -189,19 +216,19 @@ export function ExperiencesListing() {
             <Button
               aria-label="Apply search"
               className="experiences-search-submit flex h-12 items-center justify-center gap-2 rounded-2xl bg-accent px-7 text-sm font-semibold text-[#17130b] shadow-lg shadow-accent/20 hover:bg-accent/90 lg:rounded-full"
+              type="submit"
             >
               <Search aria-hidden="true" size={17} />
               <span>Explore</span>
             </Button>
-          </div>
+          </form>
         </Container>
       </section>
 
       <section aria-label="Explore experiences by province" className="border-b border-border/70 bg-background/90 py-4">
         <Container>
           <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-foreground">Explore by province</h2>
-            <p className="text-xs text-muted-foreground">Choose a region to see its current listings</p>
+            <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-foreground">Browse by province</h2>
           </div>
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 no-scrollbar sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
             <button
@@ -308,13 +335,29 @@ export function ExperiencesListing() {
       {/* Main Listing & Filters Section */}
       <Section className="py-8 sm:py-12">
         <Container>
+          <div
+            aria-live="polite"
+            className={cn(
+              "mb-6 rounded-2xl border px-4 py-3 text-sm",
+              availabilitySearchError
+                ? "border-destructive/30 bg-destructive/5 text-destructive"
+                : "border-border/70 bg-card text-muted-foreground",
+            )}
+            role={availabilitySearchError ? "alert" : "status"}
+          >
+            {availabilitySearchError
+              ? availabilitySearchError
+              : availabilityDate && availableExperienceSlugs
+                ? `${filteredExperiences.length} listed ${filteredExperiences.length === 1 ? "experience currently meets" : "experiences currently meet"} capacity for ${availabilityGuestCount} ${availabilityGuestCount === 1 ? "guest" : "guests"} on ${availabilityDate}. Capacity is checked again when booking.`
+                : "Choose a travel date to filter by live availability. Without a date, results show listed experiences that may not have an available departure."}
+          </div>
+
           {/* Controls Bar */}
           <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-border/60 pb-5">
             <div>
               <p className="text-sm font-semibold text-foreground">
-                Showing {sortedExperiences.length} of {experiences.length} South African experiences
+                {sortedExperiences.length} of {experiences.length} experiences
               </p>
-              <p className="text-xs text-muted-foreground">Handpicked local small-group tours</p>
             </div>
 
             {/* Sorting Dropdown */}
@@ -476,23 +519,6 @@ export function ExperiencesListing() {
                   </div>
                 </div>
 
-                {/* Rating Filter */}
-                <div className="border-t border-border/60 pt-5">
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-2.5">
-                    Minimum Rating
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    {[5, 4.8, 4.5].map((stars) => (
-                      <button
-                        className="flex items-center gap-1 rounded-xl border border-border px-2.5 py-1 text-xs font-semibold hover:border-primary"
-                        key={stars}
-                        type="button"
-                      >
-                        <Star className="size-3 fill-accent text-accent" /> {stars}+
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </GlassPanel>
             </aside>
 
@@ -532,12 +558,16 @@ export function ExperiencesListing() {
                 <div className="rounded-3xl border border-border/80 bg-card p-12 text-center">
                   <Compass aria-hidden="true" className="mx-auto text-primary" size={36} />
                   <h3 className="mt-4 font-display text-2xl font-semibold">
-                    {selectedProvince
+                    {availabilityDate && availableExperienceSlugs
+                      ? "No experiences match your date, group size, and filters"
+                      : selectedProvince
                       ? `No experiences listed in ${selectedProvince} just yet`
                       : "No experiences match those filters"}
                   </h3>
                   <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
-                    {selectedProvince
+                    {availabilityDate && availableExperienceSlugs
+                      ? "Try another date, a smaller group, or broader filters. Capacity is confirmed again during booking."
+                      : selectedProvince
                       ? "Explore another province or clear the province filter to see the experiences currently listed."
                       : "Try expanding your budget range, resetting destination filters, or selecting All Categories."}
                   </p>

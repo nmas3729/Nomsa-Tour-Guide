@@ -3,8 +3,9 @@ import { AuthShell } from "@/src/features/auth/components/auth-ui";
 import { RegistrationForm } from "@/src/features/auth/components/auth-forms";
 
 export const metadata: Metadata = {
-  title: "Create an account | Nomsa Tour Guides",
+  title: "Create an account",
   description: "Join Nomsa Tour Guides as a traveller or local guide.",
+  robots: { index: false, follow: false },
 };
 
 export default function RegisterPage() {

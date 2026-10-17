@@ -4,8 +4,8 @@ import { PublicLayout } from "@/src/components/marketing/public-layout";
 import { publicPageMetadata } from "@/src/lib/seo";
 
 export const metadata: Metadata = publicPageMetadata({
-  title: "Discover South Africa with Local Guides",
-  description: "Find thoughtful local experiences and meet the people who bring South Africa to life with Nomsa Tour Guides.",
+  title: "Locally Led Experiences in South Africa",
+  description: "Browse walks, safaris, tastings, and cultural experiences led by local guides.",
   path: "/",
 });
 

@@ -5,9 +5,10 @@ import { PublicLayout } from "@/src/components/marketing/public-layout";
 import { publicPageMetadata } from "@/src/lib/seo";
 
 export const metadata: Metadata = publicPageMetadata({
-  title: "Booking Details | Nomsa Tour Guides",
-  description: "Review your South African experience booking and current payment status.",
+  title: "Booking Details",
+  description: "Review your booking details and payment status.",
   path: "/booking/confirmation",
+  robots: { index: false, follow: false },
 });
 
 export default function BookingConfirmationPage() {

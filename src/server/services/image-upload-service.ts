@@ -2,6 +2,7 @@ import "server-only";
 
 import { UserRole } from "@/src/server/db/generated/enums";
 import type { AuthenticatedPrincipal } from "@/src/features/auth/types";
+import { hasVerifiedAuthenticator } from "@/src/features/auth/lib/privileged-mfa";
 import type { ImageUploadInput } from "@/src/features/uploads/schemas";
 import {
   CloudinaryConfigurationError,
@@ -35,6 +36,9 @@ export async function uploadImageForUser(
   principal: AuthenticatedPrincipal,
   input: ImageUploadInput,
 ) {
+  if (!hasVerifiedAuthenticator(principal)) {
+    throw new ImageUploadError("Two-factor authentication is required for this account.", 403);
+  }
   const prisma = getPrismaClient();
   const isAdministrator =
     principal.role === UserRole.ADMIN || principal.role === UserRole.SUPER_ADMIN;

@@ -10,7 +10,6 @@ import {
   Lock,
   MapPin,
   ShieldCheck,
-  Star,
 } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
@@ -26,9 +25,15 @@ const availableTimeSlots = [
   { id: "afternoon", time: "02:00 PM – 04:30 PM", label: "Golden Afternoon", spotsLeft: 4 },
 ];
 
-export function BookingFlow({ experience }: { experience: ExperienceDetailData }) {
+export function BookingFlow({
+  experience,
+  minimumBookingDate,
+}: {
+  experience: ExperienceDetailData;
+  minimumBookingDate: string;
+}) {
   const idempotencyKey = useRef<string | null>(null);
-  // Step state (1: Date & Time, 2: Travellers, 3: Review, 4: Payment Preview, 5: Success)
+  // Step state (1: Date & Time, 2: Travellers, 3: Review, 4: Payment, 5: Success)
   const [currentStep, setCurrentStep] = useState<number>(1);
 
   // Step 1 State: Dates & Time & Guests
@@ -57,10 +62,9 @@ export function BookingFlow({ experience }: { experience: ExperienceDetailData }
 
   // Calculation Breakdown
   const baseRate = experience.price * totalGuests;
-  const guideFee = Math.round(baseRate * 0.15); // included guide allocation preview
-  const conservationFee = 120 * totalGuests;
+  const additionalGuestFee = 120 * totalGuests;
   const platformDiscount = totalGuests >= 4 ? 250 : 0;
-  const grandTotal = baseRate + conservationFee - platformDiscount;
+  const grandTotal = baseRate + additionalGuestFee - platformDiscount;
 
   async function handlePayFastCheckout() {
     setIsSubmitting(true);
@@ -207,7 +211,7 @@ export function BookingFlow({ experience }: { experience: ExperienceDetailData }
                         <input
                           className="ui-input pl-12 text-sm font-semibold"
                           id="calendar-date"
-                          min="2026-10-20"
+                          min={minimumBookingDate}
                           onChange={(e) => setSelectedDate(e.target.value)}
                           required
                           type="date"
@@ -504,6 +508,12 @@ export function BookingFlow({ experience }: { experience: ExperienceDetailData }
                       <ArrowRight size={16} />
                     </Button>
                   </div>
+                  <p className="text-xs leading-5 text-muted-foreground">
+                    We use these details to process your booking request. Read our{" "}
+                    <Link className="font-semibold text-primary underline underline-offset-4" href="/privacy">
+                      Privacy Notice
+                    </Link>.
+                  </p>
                 </div>
               )}
 
@@ -516,7 +526,7 @@ export function BookingFlow({ experience }: { experience: ExperienceDetailData }
                       Review Reservation
                     </h1>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Please verify all details before advancing to payment preview.
+                      Please verify all details before continuing to payment.
                     </p>
                   </div>
 
@@ -529,7 +539,6 @@ export function BookingFlow({ experience }: { experience: ExperienceDetailData }
                           className="object-cover"
                           fill
                           src={experience.images[0].url}
-                          unoptimized
                         />
                       </div>
                       <div>
@@ -610,14 +619,14 @@ export function BookingFlow({ experience }: { experience: ExperienceDetailData }
                       className="flex-1 sm:flex-initial h-12 px-8 font-semibold bg-accent text-white hover:bg-accent/90"
                       onClick={() => setCurrentStep(4)}
                     >
-                      <span>Proceed to Payment Preview</span>
+                      <span>Proceed to Payment</span>
                       <ArrowRight size={16} />
                     </Button>
                   </div>
                 </div>
               )}
 
-              {/* STEP 4: Payment Preview */}
+              {/* STEP 4: Payment */}
               {currentStep === 4 && (
                 <div className="space-y-8">
                   <div>
@@ -684,7 +693,6 @@ export function BookingFlow({ experience }: { experience: ExperienceDetailData }
                       className="object-cover"
                       fill
                       src={experience.images[0].url}
-                      unoptimized
                     />
                   </div>
                   <div>
@@ -692,10 +700,6 @@ export function BookingFlow({ experience }: { experience: ExperienceDetailData }
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       <MapPin size={11} className="inline mr-1" />
                       {experience.destination} · {experience.duration}
-                    </p>
-                    <p className="mt-1 flex items-center gap-1 text-xs font-semibold">
-                      <Star size={12} className="fill-accent text-accent" />
-                      {experience.rating.toFixed(1)} ({experience.reviewCount})
                     </p>
                   </div>
                 </div>
@@ -712,12 +716,8 @@ export function BookingFlow({ experience }: { experience: ExperienceDetailData }
                     <span className="font-medium text-foreground">{formatCurrency(baseRate)}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Guide fee allocation</span>
-                    <span className="text-primary font-medium">{formatCurrency(guideFee)}</span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Conservation & regional park permit</span>
-                    <span className="text-foreground">{formatCurrency(conservationFee)}</span>
+                    <span>Additional per-traveller fee</span>
+                    <span className="text-foreground">{formatCurrency(additionalGuestFee)}</span>
                   </div>
                   {platformDiscount > 0 ? (
                     <div className="flex justify-between text-primary font-medium">
@@ -725,10 +725,6 @@ export function BookingFlow({ experience }: { experience: ExperienceDetailData }
                       <span>-{formatCurrency(platformDiscount)}</span>
                     </div>
                   ) : null}
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Taxes & 15% South African VAT</span>
-                    <span className="text-foreground">Included</span>
-                  </div>
                 </div>
 
                 {/* Total */}

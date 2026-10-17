@@ -31,7 +31,6 @@ export function DestinationCard({
         fill
         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
         src={image}
-        unoptimized
       />
       {/* Cinematic Dual Gradient */}
       <div
@@ -65,7 +64,7 @@ export function DestinationCard({
         ) : null}
 
         <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-accent opacity-100 transition-opacity duration-300 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-visible:opacity-100">
-          <span>Discover {name}</span>
+          <span>View experiences</span>
           <ArrowRight aria-hidden="true" size={14} />
         </div>
       </div>

@@ -6,7 +6,7 @@ import { publicPageMetadata } from "@/src/lib/seo";
 
 export const metadata: Metadata = publicPageMetadata({
   title: "Website Terms",
-  description: "Review the terms for using the Nomsa Tour Guides website and its public previews.",
+  description: "Review the terms for Nomsa Tour Guides accounts, guide applications, bookings, and payments.",
   path: "/terms",
 });
 
@@ -15,8 +15,8 @@ export default function Page() {
     <PublicLayout>
       <LegalPage
         eyebrow="The details"
-        introduction="These terms describe the current use of the Nomsa Tour Guides website. Marketplace listings and contact forms shown here are previews unless stated otherwise."
-        lastUpdated="16 October 2026"
+        introduction="These terms describe the use of Nomsa Tour Guides, including guide applications, booking requests, and hosted PayFast checkout."
+        lastUpdated="17 October 2026"
         sections={termsSections}
         title="Website terms"
       />

@@ -2,22 +2,22 @@ export const privacySections = [
   {
     heading: "Information we may collect",
     paragraphs: [
-      "When you create an account or contact us, we may collect details such as your name, email address, phone number, and information you choose to provide. Guide applicants may be asked for additional identity, business, or verification information as part of an application.",
-      "Basic technical information, such as browser and device details and security events, may be processed to operate and protect the website.",
+      "When you create an account, contact us, apply to become a guide, or request a booking, we may collect your name, email address, phone number, and the information you provide. Booking requests may include travel dates, traveller details, an emergency contact, and dietary, accessibility, or other requests. Guide applications may include business and supporting application details.",
+      "We process account, booking, payment-status, and security records to operate and protect the service. Payment card details are entered on PayFast's hosted checkout, not into Nomsa Tour Guides forms.",
     ],
   },
   {
     heading: "How we use information",
     paragraphs: [
-      "We use personal information to provide and secure account services, respond to enquiries, assess guide applications, communicate about the platform, and meet legal obligations. We aim to request only information relevant to those purposes.",
-      "The contact and newsletter forms currently shown on this public website are previews and do not submit or store form entries.",
+      "We use personal information to provide account services, respond to enquiries, review guide applications manually, process booking requests and payment-status updates, send relevant service emails, and meet legal obligations. We aim to request information relevant to those purposes.",
+      "Contact messages and guide applications are submitted to the Nomsa team. The newsletter form is currently a design preview and does not subscribe you or store your email address.",
     ],
   },
   {
     heading: "Sharing and service providers",
     paragraphs: [
-      "We do not sell personal information. Information may be shared with service providers who help operate the platform, with appropriate safeguards, or where disclosure is required by law or necessary to protect people and the service.",
-      "If marketplace booking or payment features are introduced, any additional information handling will be explained before those features are made available.",
+      "We do not sell personal information. Information may be shared with service providers needed to operate the service, including email delivery, image hosting, database hosting, and PayFast checkout and payment notifications. We may also share booking details with the relevant guide to arrange an accepted booking, or disclose information where required by law or necessary to protect people and the service.",
+      "PayFast handles payment details entered on its hosted checkout. Nomsa Tour Guides receives payment status and transaction information needed to update the booking.",
     ],
   },
   {
@@ -29,7 +29,7 @@ export const privacySections = [
   {
     heading: "Your choices and requests",
     paragraphs: [
-      "You may contact us to request access to, correction of, or deletion of personal information, subject to applicable law and legitimate record-keeping requirements. We may need to verify your identity before acting on a request.",
+      "You may contact us through the Contact page or at hello@nomsatourguides.co.za to request access to, correction of, or deletion of personal information, subject to applicable law and legitimate record-keeping requirements. We may need to verify your identity before acting on a request.",
     ],
   },
   {
@@ -45,14 +45,14 @@ export const termsSections = [
     heading: "Using this website",
     paragraphs: [
       "You may use the website lawfully and respectfully. Do not interfere with its operation, attempt to access accounts or systems without permission, or submit information that is false, unlawful, or harmful.",
-      "The public catalogue, search controls, contact form, newsletter form, and other marketplace previews are provided for information and design demonstration. They do not currently create bookings, accept payments, or send submissions.",
+      "The contact form sends messages to the Nomsa team, and guide applications are submitted for manual review. The newsletter form is a design preview and does not subscribe you. Some catalogue descriptions, guide profiles, ratings, and reviews are illustrative; they are not verified customer feedback or a guarantee of current availability.",
     ],
   },
   {
     heading: "Accounts and guide applications",
     paragraphs: [
       "If you create an account, you are responsible for providing accurate information and keeping your sign-in credentials secure. Do not use another person's identity or allow unauthorized use of your account.",
-      "Submitting a guide application does not guarantee approval, publication, or access to future marketplace features. Guide profiles are subject to review and platform requirements.",
+      "Submitting a guide application does not guarantee approval or publication. Applications are reviewed manually, and an approved guide profile is not published automatically.",
     ],
   },
   {
@@ -62,9 +62,9 @@ export const termsSections = [
     ],
   },
   {
-    heading: "No booking or payment commitment",
+    heading: "Bookings and payment",
     paragraphs: [
-      "Listings and experience cards are sample content. Availability, prices, ratings, guide profiles, and testimonials may be illustrative and should not be treated as a confirmed offer. No booking or payment contract is formed through the current marketing website.",
+      "A booking request is checked against the published experience and available capacity in the booking system. An accepted request creates a pending booking and proceeds to PayFast hosted checkout; it is confirmed only after a verified payment notification. Booking, payment, and refund statuses are distinct. Review the experience details, date, traveller count, price, and cancellation terms shown before checkout.",
     ],
   },
   {

@@ -39,8 +39,7 @@ export function GuideCard({
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Local guide</p>
-            <div className="mt-1 flex items-start justify-between gap-2">
+            <div className="flex items-start justify-between gap-2">
               <h3 className="font-display text-xl font-semibold leading-tight tracking-tight text-foreground">
                 {href ? (
                   <Link className="text-foreground no-underline transition-colors hover:text-primary" href={href}>
@@ -52,44 +51,46 @@ export function GuideCard({
               </h3>
             </div>
 
-            <p className="mt-2 flex items-start gap-1.5 text-xs leading-relaxed text-muted-foreground">
-              <MapPin aria-hidden="true" className="mt-0.5 shrink-0 text-primary" size={13} />
-              {location?.trim() || "Location not listed"}
-            </p>
+            {location?.trim() ? (
+              <p className="mt-2 flex items-start gap-1.5 text-xs leading-relaxed text-muted-foreground">
+                <MapPin aria-hidden="true" className="mt-0.5 shrink-0 text-primary" size={13} />
+                {location}
+              </p>
+            ) : null}
 
-            <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-              {rating !== undefined && rating > 0 ? (
-                <span aria-label={`Guide rating ${rating.toFixed(1)} out of 5`} className="flex items-center gap-1 font-semibold text-foreground">
-                  <Star aria-hidden="true" className="fill-accent text-accent" size={13} />
-                  {rating.toFixed(1)} <span className="font-normal text-muted-foreground">guide rating</span>
-                </span>
-              ) : (
-                <span className="text-muted-foreground">Rating summary unavailable</span>
-              )}
+            {(rating !== undefined && rating > 0) || (yearsExperience !== undefined && yearsExperience > 0) ? (
+              <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                {rating !== undefined && rating > 0 ? (
+                  <span aria-label={`Guide rating ${rating.toFixed(1)} out of 5`} className="flex items-center gap-1 font-semibold text-foreground">
+                    <Star aria-hidden="true" className="fill-accent text-accent" size={13} />
+                    {rating.toFixed(1)} <span className="font-normal text-muted-foreground">rating</span>
+                  </span>
+                ) : null}
 
-              {yearsExperience !== undefined && yearsExperience > 0 ? (
-                <span className="font-medium text-foreground">
-                  {yearsExperience} {yearsExperience === 1 ? "year" : "years"} of experience
-                </span>
-              ) : (
-                <span className="text-muted-foreground">Years of experience not listed</span>
-              )}
-            </div>
+                {yearsExperience !== undefined && yearsExperience > 0 ? (
+                  <span className="font-medium text-foreground">
+                    {yearsExperience} {yearsExperience === 1 ? "year" : "years"} of experience
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
 
-        <p className="mt-5 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
-          {biography?.trim() || "A biography has not been provided for this guide yet."}
-        </p>
+        {biography?.trim() ? (
+          <p className="mt-5 line-clamp-3 text-sm leading-relaxed text-muted-foreground">{biography}</p>
+        ) : null}
 
-        <div className="mt-4 flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
-          <Globe aria-hidden="true" size={13} className="mt-0.5 shrink-0 text-primary" />
-          <span>{languages?.length ? languages.join(" · ") : "Languages not listed"}</span>
-        </div>
+        {languages?.length ? (
+          <div className="mt-4 flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
+            <Globe aria-hidden="true" size={13} className="mt-0.5 shrink-0 text-primary" />
+            <span>{languages.join(" · ")}</span>
+          </div>
+        ) : null}
 
-        <div className="mt-4">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Experience themes</p>
-          {specialties?.length ? (
+        {specialties?.length ? (
+          <div className="mt-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Specialties</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {specialties.map((specialty) => (
                 <span
@@ -100,10 +101,8 @@ export function GuideCard({
                 </span>
               ))}
             </div>
-          ) : (
-            <p className="mt-2 text-xs text-muted-foreground">Specialties not listed</p>
-          )}
-        </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-6 border-t border-border/50 pt-4">
@@ -128,7 +127,7 @@ export function GuideCard({
             ))}
           </ul>
         ) : (
-          <p className="mt-2 text-xs text-muted-foreground">No other experiences are listed for this guide yet.</p>
+          <p className="mt-2 text-xs text-muted-foreground">No experiences listed yet.</p>
         )}
       </div>
     </article>

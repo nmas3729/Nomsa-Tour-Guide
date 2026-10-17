@@ -1,5 +1,3 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -11,7 +9,6 @@ import {
   CookingPot,
   CreditCard,
   Headphones,
-  HeartHandshake,
   Home,
   Landmark,
   Leaf,
@@ -20,7 +17,6 @@ import {
   Palette,
   Search,
   Sparkles,
-  Star,
   Sun,
   UsersRound,
   Waves,
@@ -36,7 +32,7 @@ import { Section } from "@/src/components/layout/section";
 import { imageAlt } from "@/src/lib/image";
 import { FadeIn, FadeInScale, SlideIn } from "@/src/components/ui/motion";
 import { NewsletterForm } from "./marketing-forms";
-import { categories, destinations, experiences, guides, provinces, testimonials } from "@/src/data/public-site";
+import { categories, destinations, experiences, guides, provinces } from "@/src/data/public-site";
 
 const categoryIcons: Record<string, LucideIcon> = {
   leaf: Leaf,
@@ -55,55 +51,45 @@ const trustPillars = [
   {
     icon: Compass,
     title: "Know Your Guide",
-    description: "Explore each guide profile's background, experience, languages, and stated specialties before choosing.",
+    description: "Review a guide's experience, languages, and specialties.",
   },
   {
     icon: CreditCard,
-    title: "PayFast Checkout",
-    description: "Continue to PayFast's hosted checkout. Booking status updates after payment verification.",
-  },
-  {
-    icon: Compass,
-    title: "Local Perspectives",
-    description: "Find experiences shaped by guides' own interests, regional knowledge, and personal stories.",
+    title: "PayFast payments",
+    description: "Payments continue through PayFast's hosted checkout.",
   },
   {
     icon: CheckCircle2,
     title: "Clear Booking Terms",
-    description: "Review the date, group details, price, and cancellation terms shown for each experience before booking.",
-  },
-  {
-    icon: HeartHandshake,
-    title: "Guest Reviews",
-    description: "Ratings and comments are shown on experience listings where reviews are available.",
+    description: "See the date, group size, price, and cancellation terms before booking.",
   },
   {
     icon: Headphones,
-    title: "A Team You Can Contact",
-    description: "Email our team with questions about experiences, listings, or your booking.",
+    title: "Support",
+    description: "Contact our team with questions about a listing or booking.",
   },
 ];
 
 const howItWorksSteps = [
   {
     step: "01",
-    title: "Dream & Discover",
-    text: "Explore handcrafted journeys and private tastings led by independent South African hosts.",
+    title: "Browse",
+    text: "Choose a walk, tasting, safari, or cultural experience.",
   },
   {
     step: "02",
-    title: "Reserve Seamlessly",
-    text: "Choose your preferred date, review the reservation, and continue to PayFast's hosted checkout.",
+    title: "Book",
+    text: "Select a date and confirm your booking.",
   },
   {
     step: "03",
-    title: "Immerse & Connect",
-    text: "Experience the bushveld, coastlines, and historic townships with a guide who calls it home.",
+    title: "Go with a guide",
+    text: "Enjoy the experience with someone who knows the place.",
   },
   {
     step: "04",
-    title: "Share the Story",
-    text: "Leave heartfelt feedback to empower independent local guides and inspire fellow travellers.",
+    title: "Leave a review",
+    text: "Share feedback after your experience.",
   },
 ];
 
@@ -114,10 +100,9 @@ function HomeHero() {
         alt="Cape Town's coastline and city beneath the distinctive Table Mountain plateau"
         className="home-hero-image absolute inset-0 -z-30 object-cover object-center"
         fill
-        priority
+        preload
         sizes="100vw"
         src="https://images.unsplash.com/photo-1580060839134-75a5edca2e99?auto=format&fit=crop&w=2600&q=90"
-        unoptimized
       />
 
       <div aria-hidden="true" className="home-hero-aurora absolute inset-0 -z-20" />
@@ -126,15 +111,10 @@ function HomeHero() {
       {/* Hero Content */}
       <Container className="flex flex-1 flex-col justify-center pb-20 pt-36 sm:pt-44 lg:pt-48">
         <FadeIn className="w-full max-w-none">
-          {/* Eyebrow & local discovery cue */}
           <div className="flex flex-wrap items-center gap-3">
             <span className="home-hero-kicker inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-white backdrop-blur-md">
               <span aria-hidden="true" className="home-hero-indicator size-2 rounded-full bg-accent" />
-              EXPLORE SOUTH AFRICA
-            </span>
-            <span className="hidden items-center gap-1.5 text-xs font-medium text-white/90 sm:flex">
-              <Compass aria-hidden="true" className="text-accent" size={14} />
-              <span>Discover with local guides</span>
+              SOUTH AFRICA
             </span>
           </div>
 
@@ -144,7 +124,7 @@ function HomeHero() {
           </h1>
 
           <p className="mt-6 max-w-2xl text-base leading-relaxed text-white/85 sm:text-lg md:text-xl">
-            Discover locally led journeys, from Franschhoek vineyards and Cape coastlines to Greater Kruger wildlife and the stories that make each place distinct.
+            Walks, tastings, and safaris from the Cape to Greater Kruger.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-4">
@@ -162,10 +142,12 @@ function HomeHero() {
 
         {/* Floating glass search bar */}
         <FadeInScale className="mt-14 w-full max-w-5xl">
-          <div
+          <form
+            action="/experiences"
             aria-label="Search tours and experiences"
-            role="search"
             className="home-search grid gap-2 rounded-3xl border p-3 text-white shadow-[0_24px_70px_rgba(0,0,0,0.35)] backdrop-blur-2xl sm:grid-cols-2 lg:grid-cols-[1.4fr_1.1fr_1fr_auto] lg:items-center lg:rounded-full lg:p-2.5"
+            method="get"
+            role="search"
           >
             {/* Destination */}
             <label className="home-search-field flex min-h-14 items-center gap-3.5 rounded-2xl px-5 lg:pl-7" htmlFor="search-destination">
@@ -178,6 +160,7 @@ function HomeHero() {
                   autoComplete="off"
                   className="home-search-input w-full border-0 bg-transparent p-0 text-sm font-semibold text-white outline-none placeholder:text-white/55 focus-visible:ring-0"
                   id="search-destination"
+                  name="destination"
                   placeholder="Where do you want to go?"
                   type="text"
                 />
@@ -195,6 +178,7 @@ function HomeHero() {
                   aria-label="Experience date"
                   className="home-search-input w-full border-0 bg-transparent p-0 text-sm font-semibold text-white outline-none focus-visible:ring-0"
                   id="search-date"
+                  name="date"
                   type="date"
                 />
               </div>
@@ -210,14 +194,15 @@ function HomeHero() {
                 <select
                   aria-label="Number of guests"
                   className="home-search-input w-full appearance-none border-0 bg-transparent p-0 text-sm font-semibold text-white outline-none focus-visible:ring-0"
-                  defaultValue=""
+                  defaultValue="2"
                   id="search-guests"
+                  name="guests"
                 >
-                  <option className="bg-[#101713] text-white" disabled value="">Select guests</option>
-                  <option className="bg-[#101713] text-white">1 guest</option>
-                  <option className="bg-[#101713] text-white">2 guests</option>
-                  <option className="bg-[#101713] text-white">3–5 guests</option>
-                  <option className="bg-[#101713] text-white">6+ group</option>
+                  {Array.from({ length: 10 }, (_, index) => index + 1).map((guestCount) => (
+                    <option className="bg-[#101713] text-white" key={guestCount} value={guestCount}>
+                      {guestCount} {guestCount === 1 ? "guest" : "guests"}
+                    </option>
+                  ))}
                 </select>
               </div>
             </label>
@@ -227,26 +212,14 @@ function HomeHero() {
               aria-label="Search experiences"
               className="home-search-submit flex h-14 items-center justify-center gap-2 rounded-2xl bg-accent px-8 text-base font-semibold text-white shadow-xl shadow-accent/25 transition-all duration-300 hover:scale-[1.02] hover:bg-accent/90 active:scale-95 lg:rounded-full"
               size="lg"
+              type="submit"
             >
               <Search aria-hidden="true" size={20} />
               <span>Search</span>
             </Button>
-          </div>
+          </form>
         </FadeInScale>
 
-        {/* Quick Highlights */}
-        <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-white/80">
-          <span className="font-semibold uppercase tracking-wider text-accent">Explore these places:</span>
-          {["Cape Town Peninsula", "Greater Kruger", "Stellenbosch Cellars", "Soweto Murals", "Drakensberg Escarpment"].map((place) => (
-            <Link
-              className="rounded-full bg-white/10 px-3.5 py-1 text-white/90 backdrop-blur-sm transition-colors hover:bg-white/20 hover:text-white"
-              href="/destinations"
-              key={place}
-            >
-              {place}
-            </Link>
-          ))}
-        </div>
       </Container>
 
       {/* Animated Live Statistics Bar */}
@@ -266,17 +239,17 @@ function HomeHero() {
           </div>
           <div className="text-center sm:text-left">
             <p className="font-display text-2xl font-bold tracking-tight text-[#f4cd9f] sm:text-3xl">PayFast</p>
-            <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-white/75">PayFast Checkout</p>
+            <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-white/75">Hosted payment</p>
           </div>
         </Container>
       </div>
 
       <a
-        aria-label="Scroll to discover destinations"
+        aria-label="Scroll down"
         className="absolute bottom-24 left-1/2 hidden -translate-x-1/2 items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-white/70 transition-colors hover:text-white md:flex"
         href="#popular-destinations"
       >
-        Scroll to discover <ArrowDown aria-hidden="true" size={14} />
+        Scroll <ArrowDown aria-hidden="true" size={14} />
       </a>
     </section>
   );
@@ -289,7 +262,7 @@ function SectionHeading({
   href,
   linkLabel = "View all",
 }: {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   description?: string;
   href?: string;
@@ -298,7 +271,9 @@ function SectionHeading({
   return (
     <div className="mb-12 flex flex-col gap-4 sm:mb-16 sm:flex-row sm:items-end sm:justify-between">
       <div className="max-w-2xl">
-        <p className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-primary">{eyebrow}</p>
+        {eyebrow ? (
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.22em] text-primary">{eyebrow}</p>
+        ) : null}
         <h2 className="font-display text-3xl font-medium tracking-tight text-foreground sm:text-4xl lg:text-5xl">
           {title}
         </h2>
@@ -328,8 +303,7 @@ function PopularDestinationsSection() {
     <Section className="bg-background" id="popular-destinations" spacing="spacious">
       <Container>
         <SectionHeading
-          description="From soaring basalt amphitheatres and sun-drenched vineyards to untamed big-game savannas, begin where your curiosity calls."
-          eyebrow="Popular Destinations"
+          description="Basalt cliffs, vineyards, and big-game country."
           href="/destinations"
           linkLabel="All Destinations"
           title="Landscapes That Stay With You"
@@ -344,10 +318,8 @@ function PopularDestinationsSection() {
                   alt={imageAlt(featured.imageDescription, `${featured.name}, ${featured.province}`)}
                   className="-z-10 object-cover transition-transform duration-1000 ease-out group-hover:scale-105"
                   fill
-                  priority
                   sizes="(max-width: 1024px) 100vw, 60vw"
                   src={featured.image}
-                  unoptimized
                 />
                 <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
                 <div className="relative z-30 mt-auto flex flex-col justify-end p-8 sm:p-10">
@@ -362,9 +334,6 @@ function PopularDestinationsSection() {
                     {featured.description}
                   </p>
                   <div className="mt-6 flex items-center justify-between">
-                    <span className="rounded-full bg-white/20 px-4 py-1 text-xs font-semibold uppercase tracking-wider backdrop-blur-md">
-                      Local experiences
-                    </span>
                     <Button asChild className="bg-white text-foreground hover:bg-white/90">
                       <Link href="/destinations">Explore {featured.name} →</Link>
                     </Button>
@@ -394,13 +363,9 @@ function PopularDestinationsSection() {
 
         <div className="mt-12 rounded-3xl border border-border/70 bg-card/80 p-5 shadow-sm sm:mt-16 sm:p-8">
           <div className="mb-5 max-w-2xl">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Explore by Province</p>
-            <h3 className="mt-2 font-display text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
-              Find your South Africa
+            <h3 className="font-display text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
+              All nine provinces
             </h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base">
-              Browse destination regions across all nine provinces. Experience counts reflect current listings; provinces without listings remain open for future discovery.
-            </p>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-[repeat(3,minmax(0,1fr))]">
             {provinces.map((province) => {
@@ -436,23 +401,11 @@ function EditorialStorytellingBreak() {
               Our Philosophy
             </span>
             <h2 className="mt-5 font-display text-3xl font-medium leading-[1.15] tracking-tight sm:text-4xl lg:text-5xl">
-              We don&apos;t just show you South Africa. <br />
-              <span className="italic text-[#f4cd9f]">We introduce you to it.</span>
+              Travel shaped by local knowledge.
             </h2>
             <p className="mt-6 text-base leading-relaxed text-white/80 sm:text-lg">
-              South Africa is vast, storied, and intensely personal. The memories that linger are stories shared over rooibos tea in Bo-Kaap, the quiet stillness of tracking a leopard with a Kruger ranger, and the laughter shared with a township artist in Soweto.
+              Share rooibos in Bo-Kaap, track wildlife with a Kruger guide, or explore Soweto with a local artist.
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-6 border-t border-white/15 pt-6 text-xs font-semibold uppercase tracking-wider text-white/70">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="text-accent" size={16} /> Local perspectives
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="text-accent" size={16} /> Independent local hosts
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="text-accent" size={16} /> Small-Group Intimacy
-              </div>
-            </div>
           </SlideIn>
 
           <SlideIn className="relative isolate aspect-[4/3] overflow-hidden rounded-3xl" direction="right">
@@ -462,7 +415,6 @@ function EditorialStorytellingBreak() {
               fill
               sizes="(max-width: 1024px) 100vw, 50vw"
               src="/images/south-africa/cape-town-harbour.jpg"
-              unoptimized
             />
             <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             <div className="absolute bottom-6 left-6 right-6 z-30 flex items-center justify-between text-xs text-white/90">
@@ -482,11 +434,9 @@ function FeaturedExperiencesSection() {
     <Section className="bg-secondary/40" spacing="spacious">
       <Container>
         <SectionHeading
-          description="Handpicked small-group journeys, private wine tastings, and wildlife encounters led by vetted regional masters."
-          eyebrow="Featured Experiences"
           href="/experiences"
-          linkLabel="Explore All Experiences"
-          title="Handcrafted Itineraries"
+          linkLabel="All Experiences"
+          title="Featured experiences"
         />
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -507,11 +457,9 @@ function TopGuidesSection() {
     <Section spacing="spacious">
       <Container>
         <SectionHeading
-          description="Meet guides who share their interests in wildlife, culture, food, wine, and the places they know."
-          eyebrow="Featured Guides"
           href="/guides"
-          linkLabel="Meet All Guides"
-          title="Meet Your South African Hosts"
+          linkLabel="All Guides"
+          title="Local guides"
         />
 
         <div className="grid gap-6 md:grid-cols-3">
@@ -532,11 +480,9 @@ function TravelCategoriesSection() {
     <Section className="border-y border-border/60 bg-card" spacing="spacious">
       <Container>
         <SectionHeading
-          description="Tailor your South African holiday around what moves you most: wilderness, culinary heritage, or outdoor thrills."
-          eyebrow="Categories"
           href="/experiences"
           linkLabel="All 10 Categories"
-          title="Follow Your Travel Passions"
+          title="Browse by category"
         />
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
@@ -555,11 +501,6 @@ function TravelCategoriesSection() {
                   <h3 className="mt-5 font-display text-lg font-semibold tracking-tight text-foreground transition-colors group-hover:text-primary">
                     {category.name}
                   </h3>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{category.description}</p>
-                </div>
-                <div className="mt-6 flex items-center gap-1 text-xs font-semibold text-primary opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                  <span>Browse tours</span>
-                  <ArrowRight aria-hidden="true" size={14} />
                 </div>
               </Link>
             );
@@ -576,15 +517,9 @@ function TrustPillarsSection() {
     <Section spacing="spacious">
       <Container>
         <div className="mx-auto max-w-3xl text-center">
-          <span className="inline-block rounded-full bg-primary/10 px-3.5 py-1 text-xs font-bold uppercase tracking-[0.22em] text-primary">
-            Peace of Mind
-          </span>
           <h2 className="mt-4 font-display text-3xl font-medium tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-            Book South Africa With Confidence
+          Before you book
           </h2>
-          <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Review guide profiles, experience details, payment steps, and the terms for each booking before you decide.
-          </p>
         </div>
 
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -612,15 +547,9 @@ function HowItWorksSection() {
     <Section className="bg-[#14261c] text-white" spacing="spacious">
       <Container>
         <div className="mx-auto max-w-3xl text-center">
-          <span className="inline-block rounded-full bg-accent/20 px-3.5 py-1 text-xs font-bold uppercase tracking-[0.22em] text-accent">
-            How It Works
-          </span>
           <h2 className="mt-4 font-display text-3xl font-medium tracking-tight sm:text-4xl lg:text-5xl">
-            Four Steps to Somewhere Special
+            From browsing to booking
           </h2>
-          <p className="mt-4 text-base leading-relaxed text-white/75 sm:text-lg">
-            Browse local experiences, review the details, and choose the journey that feels right for you.
-          </p>
         </div>
 
         <ol className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
@@ -638,47 +567,6 @@ function HowItWorksSection() {
             </li>
           ))}
         </ol>
-      </Container>
-    </Section>
-  );
-}
-
-{/* Customer Stories */}
-function CustomerStoriesSection() {
-  return (
-    <Section className="bg-secondary/40" spacing="spacious">
-      <Container>
-        <SectionHeading
-          description="Authentic feedback from international and domestic guests who journeyed with our local hosts."
-          eyebrow="Guest Testimonials"
-          title="Journeys to Remember"
-        />
-
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {testimonials.map((testimonial) => (
-            <div
-              className="flex flex-col justify-between rounded-3xl border border-border/70 bg-card p-7 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
-              key={testimonial.name}
-            >
-              <div>
-                <div aria-label={`${testimonial.rating} out of 5 stars`} className="flex gap-1 text-accent">
-                  {Array.from({ length: testimonial.rating }, (_, i) => (
-                    <Star aria-hidden="true" className="fill-current" key={i} size={15} />
-                  ))}
-                </div>
-                <blockquote className="mt-5 font-display text-lg font-medium leading-relaxed text-foreground">
-                  &ldquo;{testimonial.quote}&rdquo;
-                </blockquote>
-              </div>
-              <div className="mt-8 border-t border-border/60 pt-4">
-                <p className="font-display text-base font-semibold text-foreground">{testimonial.name}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {testimonial.origin} <span aria-hidden="true">·</span> {testimonial.experience}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
       </Container>
     </Section>
   );
@@ -707,17 +595,14 @@ function BecomeGuideSection() {
               Turn your hometown into someone&apos;s favourite memory.
             </h2>
             <p className="mt-4 max-w-xl text-base leading-relaxed text-white/85 sm:text-lg">
-              Set your own schedule, build an independent livelihood, and welcome travellers who genuinely value local heritage and authentic hospitality.
+              Apply to share your local knowledge with travellers. Every application is reviewed by the Nomsa team.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Button asChild className="bg-accent text-white shadow-xl hover:bg-accent/90" size="lg">
                 <Link href="/become-a-guide">
-                  Become a Nomsa Guide
+                  Become a guide
                   <ArrowRight aria-hidden="true" size={18} />
                 </Link>
-              </Button>
-              <Button asChild className="border-white/30 text-white hover:bg-white/15" size="lg" variant="outline">
-                <Link href="/register?role=GUIDE">Apply Now</Link>
               </Button>
             </div>
           </div>
@@ -734,12 +619,11 @@ function HomeNewsletterSection() {
       <Container>
         <div className="grid gap-8 rounded-3xl border border-border/80 bg-card p-8 sm:p-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div>
-            <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-primary">Stay Inspired</p>
             <h2 className="font-display text-3xl font-medium tracking-tight sm:text-4xl">
-              South Africa, delivered softly to your inbox.
+              Travel notes by email.
             </h2>
             <p className="mt-3.5 max-w-xl text-base leading-relaxed text-muted-foreground">
-              Seasonal whale migrations, blooming wildflower alerts, and secret culinary walks. Curated stories, never spam.
+              Occasional updates on seasonal wildlife, wildflowers, and local food.
             </p>
           </div>
           <NewsletterForm />
@@ -760,7 +644,6 @@ export function HomePage() {
       <TravelCategoriesSection />
       <TrustPillarsSection />
       <HowItWorksSection />
-      <CustomerStoriesSection />
       <BecomeGuideSection />
       <HomeNewsletterSection />
     </>

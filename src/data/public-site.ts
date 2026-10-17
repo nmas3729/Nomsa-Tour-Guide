@@ -127,8 +127,6 @@ export const experiences = [
     imageDescription: "Cape Town houses in Bo-Kaap with Table Mountain and Lion's Head behind them",
     duration: "2.5 hours",
     price: 650,
-    rating: 4.9,
-    reviewCount: 86,
     category: "Culture",
     guide: {
       name: "Thandi Mokoena",
@@ -143,8 +141,6 @@ export const experiences = [
     imageDescription: "Safari vehicle in Kapama Game Reserve, in the Greater Kruger region",
     duration: "5 hours",
     price: 1850,
-    rating: 5.0,
-    reviewCount: 54,
     category: "Safari",
     guide: {
       name: "Sipho Ndlovu",
@@ -159,8 +155,6 @@ export const experiences = [
     imageDescription: "African penguins on the shore at Boulders Beach near Simon's Town",
     duration: "Full day",
     price: 2200,
-    rating: 4.9,
-    reviewCount: 112,
     category: "Nature",
     guide: {
       name: "Thandi Mokoena",
@@ -175,8 +169,6 @@ export const experiences = [
     imageDescription: "Bunny chow, curry served in a hollowed-out loaf of bread",
     duration: "3 hours",
     price: 780,
-    rating: 4.8,
-    reviewCount: 39,
     category: "Food",
     guide: {
       name: "Fatima Patel",
@@ -191,8 +183,6 @@ export const experiences = [
     imageDescription: "Homes on Vilakazi Street in Soweto, Johannesburg",
     duration: "4 hours",
     price: 850,
-    rating: 4.9,
-    reviewCount: 78,
     category: "Township Tours",
     guide: {
       name: "Lebo Dlamini",
@@ -207,8 +197,6 @@ export const experiences = [
     imageDescription: "Vineyard rows in the Cape Winelands",
     duration: "Half day",
     price: 1450,
-    rating: 5.0,
-    reviewCount: 42,
     category: "Wine",
     guide: {
       name: "Johan van der Merwe",
@@ -223,8 +211,6 @@ export const experiences = [
     imageDescription: "The Drakensberg Amphitheatre above the Tugela River in KwaZulu-Natal",
     duration: "6 hours",
     price: 1200,
-    rating: 4.9,
-    reviewCount: 65,
     category: "Adventure",
     guide: {
       name: "Nomvula Khumalo",
@@ -239,8 +225,6 @@ export const experiences = [
     imageDescription: "Johannesburg city skyline",
     duration: "3.5 hours",
     price: 720,
-    rating: 4.8,
-    reviewCount: 51,
     category: "Historical",
     guide: {
       name: "Lebo Dlamini",
@@ -254,7 +238,7 @@ export interface Guide {
   location: string;
   biography: string;
   image?: string;
-  rating: number;
+  rating?: number;
   specialties: string[];
   languages: string[];
   yearsExperience: number;
@@ -266,7 +250,6 @@ export const guides: Guide[] = [
     slug: "thandi-mokoena",
     location: "Cape Town, Western Cape",
     biography: "Thandi shares Cape Town through its layered heritage, vivid food culture, and mountain paths, bringing the city's neighbourhood stories into view.",
-    rating: 5.0,
     specialties: ["Culture", "Food", "Walking"],
     languages: ["English", "isiXhosa", "Afrikaans"],
     yearsExperience: 8,
@@ -276,7 +259,6 @@ export const guides: Guide[] = [
     slug: "lebo-dlamini",
     location: "Johannesburg, Gauteng",
     biography: "Lebo introduces Johannesburg through its independent art studios, lively food markets, and landmarks shaped by the city's history.",
-    rating: 4.9,
     specialties: ["Township Tours", "Art", "History"],
     languages: ["English", "isiZulu", "Sesotho"],
     yearsExperience: 6,
@@ -286,7 +268,6 @@ export const guides: Guide[] = [
     slug: "nomvula-khumalo",
     location: "Durban, KwaZulu-Natal",
     biography: "Raised along the subtropical east coast, Nomvula shares Zulu heritage and the coastal nature of KwaZulu-Natal.",
-    rating: 4.9,
     specialties: ["Nature", "Heritage", "Coast"],
     languages: ["English", "isiZulu"],
     yearsExperience: 7,
@@ -296,7 +277,6 @@ export const guides: Guide[] = [
     slug: "sipho-ndlovu",
     location: "Kruger, Mpumalanga",
     biography: "With 12 years of experience, Sipho shares the signs of the bush through animal tracks, birdlife, and nocturnal wildlife behaviour.",
-    rating: 5.0,
     specialties: ["Safari", "Wildlife", "Birding"],
     languages: ["English", "siSwati", "Tsonga"],
     yearsExperience: 12,
@@ -306,7 +286,6 @@ export const guides: Guide[] = [
     slug: "johan-van-der-merwe",
     location: "Franschhoek, Western Cape",
     biography: "A fourth-generation Cape Winelands resident with a passion for sustainable viticulture, indigenous fynbos, and pairing menus.",
-    rating: 4.9,
     specialties: ["Wine", "Culinary", "Luxury"],
     languages: ["English", "Afrikaans", "Dutch"],
     yearsExperience: 10,
@@ -316,7 +295,6 @@ export const guides: Guide[] = [
     slug: "fatima-patel",
     location: "Durban, KwaZulu-Natal",
     biography: "Fatima shares Durban through its bustling Victoria Street Market, richly spiced food, and maritime stories.",
-    rating: 4.8,
     specialties: ["Food", "Culture", "Markets"],
     languages: ["English", "Gujarati", "isiZulu"],
     yearsExperience: 9,
@@ -334,35 +312,4 @@ export const categories = [
   { name: "Historical", icon: "landmark", description: "Past in the present" },
   { name: "Family", icon: "sun", description: "Made to share" },
   { name: "Luxury", icon: "sparkles", description: "A little more special" },
-];
-
-export const testimonials = [
-  {
-    quote: "Thandi didn't just show us Cape Town. She helped us understand the people, the food and the living stories that make this city unforgettable.",
-    name: "Olivia R.",
-    origin: "London, United Kingdom",
-    experience: "Bo-Kaap neighbourhood walk",
-    rating: 5,
-  },
-  {
-    quote: "Hearing Soweto's stories with Lebo was the highlight of our entire trip. It felt authentic, welcoming, and personal from the very first minute.",
-    name: "Marcus & Ana",
-    origin: "São Paulo, Brazil",
-    experience: "Soweto culture & Vilakazi Street stories",
-    rating: 5,
-  },
-  {
-    quote: "Sipho's bush tracking knowledge in Greater Kruger blew us away. We spotted leopard tracks and learned so much about the ecosystem.",
-    name: "The Wilson family",
-    origin: "Melbourne, Australia",
-    experience: "Sunrise Big 5 game drive",
-    rating: 5,
-  },
-  {
-    quote: "Johan opened doors at small boutique wine estates we never would have discovered on our own. Outstanding hospitality and depth.",
-    name: "Elena Rostova",
-    origin: "Munich, Germany",
-    experience: "Franschhoek boutique wine tasting",
-    rating: 5,
-  },
 ];

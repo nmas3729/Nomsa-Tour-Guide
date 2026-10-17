@@ -205,6 +205,25 @@ describe("BookingConfirmationView", () => {
     expect(screen.getByText(/Cancellation terms are not included/)).toBeInTheDocument();
   });
 
+  it("shows PDF availability and clearly reports failed email delivery for a paid booking", async () => {
+    setupSuccessfulLookup(makeBooking({
+      status: "CONFIRMED",
+      paymentStatus: "SUCCEEDED",
+      paidAt: "2026-10-17T08:12:00.000Z",
+      invoiceEmailStatus: "FAILED",
+    }));
+
+    render(<BookingConfirmationView />);
+
+    const invoice = await screen.findByRole("region", { name: "Invoice" });
+    expect(invoice).toHaveTextContent("Invoice PDF available");
+    expect(invoice).toHaveTextContent("Invoice email delivery failed. You can download the PDF here.");
+    expect(screen.getByRole("link", { name: "Download PDF" })).toHaveAttribute(
+      "href",
+      "/api/bookings/booking-id/invoice",
+    );
+  });
+
   it("offers a return path after failed payment but not as a universal success claim", async () => {
     setupSuccessfulLookup(makeBooking({ status: "CANCELLED", paymentStatus: "FAILED" }));
 

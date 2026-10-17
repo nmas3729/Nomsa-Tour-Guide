@@ -1,8 +1,14 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AuthShell } from "@/src/features/auth/components/auth-ui";
 import { ChangePasswordForm } from "@/src/features/auth/components/auth-forms";
 import { getCurrentUser } from "@/src/lib/auth/session";
+
+export const metadata: Metadata = {
+  title: "Account security",
+  robots: { index: false, follow: false },
+};
 
 async function ChangePasswordContent() {
   const user = await getCurrentUser();

@@ -1,4 +1,5 @@
 import { processPayFastITN } from "@/src/server/services/booking-service";
+import { sendApprovedBookingInvoice } from "@/src/server/services/invoice-email-service";
 
 export async function POST(request: Request) {
   try {
@@ -27,6 +28,21 @@ export async function POST(request: Request) {
 
     if (!result.success) {
       return new Response(result.reason || "Invalid ITN notification", { status: 400 });
+    }
+
+    if (
+      itnData.payment_status === "COMPLETE" &&
+      itnData.m_payment_id &&
+      !("latePayment" in result && result.latePayment)
+    ) {
+      try {
+        await sendApprovedBookingInvoice(itnData.m_payment_id);
+      } catch (error) {
+        console.error(JSON.stringify({
+          event: "booking.invoice_email.failed",
+          errorName: error instanceof Error ? error.name : "UnknownError",
+        }));
+      }
     }
 
     // PayFast expects a 200 OK

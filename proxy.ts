@@ -2,13 +2,16 @@ import { getToken } from "next-auth/jwt";
 import { NextResponse, type NextRequest } from "next/server";
 import { getServerEnvironment } from "@/src/config/env";
 import { isRouteRoleAllowed, protectedRouteRoles } from "@/src/lib/auth/route-access";
+import { canAccessMfaProtectedSurface } from "@/src/features/auth/lib/privileged-mfa";
+import { UserRole } from "@/src/server/db/generated/enums";
 
 function createContentSecurityPolicy(nonce: string): string {
   const development = process.env.NODE_ENV === "development";
   return [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${development ? " 'unsafe-eval'" : ""}`,
-    `style-src 'self' 'nonce-${nonce}' 'unsafe-inline'`,
+    `style-src 'self' 'nonce-${nonce}'`,
+    "style-src-attr 'unsafe-inline'",
     "img-src 'self' blob: data: https:",
     "font-src 'self' data:",
     `connect-src 'self'${development ? " ws: wss:" : ""}`,
@@ -90,6 +93,16 @@ export async function proxy(request: NextRequest) {
     );
   }
 
+  const isMfaSetupPath = request.nextUrl.pathname === "/account/security/two-factor";
+  const role = token.role as UserRole | undefined;
+  if (!canAccessMfaProtectedSurface(role, token.mfaVerified === true, isMfaSetupPath)) {
+    return applySecurityHeaders(
+      NextResponse.redirect(new URL("/account/security/two-factor", request.url)),
+      request,
+      contentSecurityPolicy,
+    );
+  }
+
   return applySecurityHeaders(
     NextResponse.next({ request: { headers: requestHeaders } }),
     request,
@@ -100,7 +113,7 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     {
-      source: "/((?!api|_next/static|_next/image|favicon.ico).*)",
+      source: "/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)",
       missing: [
         { type: "header", key: "next-router-prefetch" },
         { type: "header", key: "purpose", value: "prefetch" },

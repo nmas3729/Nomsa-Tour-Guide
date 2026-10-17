@@ -4,6 +4,7 @@ import {
   bookingStatusLabel,
   confirmationMessage,
   isPaymentRecordedForBooking,
+  isInvoiceAvailable,
   paymentStatusLabel,
   refundStateForBooking,
   refundStatusCopy,
@@ -83,6 +84,24 @@ describe("booking and payment state presentation", () => {
     expect(isPaymentRecordedForBooking(booking({ status: "CONFIRMED", paymentStatus: "SUCCEEDED" }))).toBe(true);
     expect(isPaymentRecordedForBooking(booking({ status: "CANCELLED", paymentStatus: "SUCCEEDED" }))).toBe(false);
     expect(isPaymentRecordedForBooking(booking({ status: "CONFIRMED", paymentStatus: "PENDING" }))).toBe(false);
+  });
+
+  it("makes invoices available only for approved bookings with a persisted payment date", () => {
+    expect(isInvoiceAvailable(booking({
+      status: "CONFIRMED",
+      paymentStatus: "SUCCEEDED",
+      paidAt: "2026-10-17T08:12:00.000Z",
+    }))).toBe(true);
+    expect(isInvoiceAvailable(booking({
+      status: "AWAITING_PAYMENT",
+      paymentStatus: "PENDING",
+      paidAt: null,
+    }))).toBe(false);
+    expect(isInvoiceAvailable(booking({
+      status: "REFUND_REQUESTED",
+      paymentStatus: "REFUND_PENDING",
+      paidAt: "2026-10-17T08:12:00.000Z",
+    }))).toBe(false);
   });
 
   it("describes a requested refund as pending, not completed", () => {

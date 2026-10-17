@@ -3,8 +3,9 @@ import { AuthShell } from "@/src/features/auth/components/auth-ui";
 import { ForgotPasswordForm } from "@/src/features/auth/components/auth-forms";
 
 export const metadata: Metadata = {
-  title: "Forgot password | Nomsa Tour Guides",
+  title: "Forgot password",
   description: "Request a secure password reset link.",
+  robots: { index: false, follow: false },
 };
 
 export default function ForgotPasswordPage() {

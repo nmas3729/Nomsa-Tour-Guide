@@ -166,3 +166,11 @@ export function isPaymentRecordedForBooking(booking: BookingRecordSummary): bool
     ["CONFIRMED", "CHECKED_IN", "COMPLETED"].includes(booking.status)
   );
 }
+
+export function isInvoiceAvailable(booking: BookingRecordSummary): boolean {
+  return (
+    booking.paymentStatus === "SUCCEEDED" &&
+    Boolean(booking.paidAt) &&
+    ["CONFIRMED", "CHECKED_IN", "COMPLETED", "NO_SHOW"].includes(booking.status)
+  );
+}

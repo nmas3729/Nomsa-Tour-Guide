@@ -50,9 +50,10 @@ export function AboutPage() {
       <Section className="pb-8 sm:pb-12">
         <Container>
           <PublicPageIntro
-            description="We believe the heart of South Africa is found in the people who share it. Nomsa brings travellers and local guides together for journeys with more meaning."
+            className="max-w-5xl"
             eyebrow="Our story"
             title="A place is more than a pin on a map."
+            titleClassName="text-balance lg:whitespace-nowrap"
           />
         </Container>
       </Section>
@@ -67,7 +68,6 @@ export function AboutPage() {
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 src="/images/south-africa/blyde-three-rondavels.jpg"
-                unoptimized
               />
             </div>
             <div className="max-w-xl">
@@ -76,14 +76,9 @@ export function AboutPage() {
                 Travel can open a door between people.
               </h2>
               <p className="mt-5 text-base leading-7 text-muted-foreground">
-                South Africa is full of extraordinary places, but the moments that stay with us are often the ones shared
-                with someone who knows them intimately. A hidden coastal view. A story behind a street mural. The quiet lookout
-                just beyond the typical tourist route.
-              </p>
-              <p className="mt-4 text-base leading-7 text-muted-foreground">
-                Nomsa Tour Guides was founded to celebrate authentic local perspectives: empowering independent South African
-                guides to build sustainable tourism livelihoods, and giving travellers memorable, respectful encounters across
-                our nation.
+                The moments that stay with us are often shared with someone who knows a place well: a hidden coastal view,
+                a story behind a mural, or a lookout beyond the usual route. Nomsa Tour Guides connects travellers with
+                independent guides who share that local knowledge.
               </p>
             </div>
           </div>
@@ -120,13 +115,8 @@ export function AboutPage() {
                   <span className="block sm:inline">Shareholder, NMAS INNOVATIONS (Pty) Ltd</span>
                 </p>
                 <p className="mt-6 text-sm leading-7 text-muted-foreground sm:text-base">
-                  Nomsa Bambisa leads Nomsa Tour Guides, the tourism division of NMAS INNOVATIONS (Pty) Ltd. With a
-                  background in Travel and Tourism from Boston College, she is passionate about showcasing the beauty,
-                  culture, heritage, and diversity of South Africa.
-                </p>
-                <p className="mt-4 text-sm leading-7 text-muted-foreground sm:text-base">
-                  Through her leadership, Nomsa is committed to creating authentic, meaningful, and memorable travel
-                  experiences that connect visitors with the people, places, and stories that make South Africa unique.
+                  Nomsa Bambisa leads Nomsa Tour Guides, the tourism division of NMAS INNOVATIONS (Pty) Ltd. She studied
+                  Travel and Tourism at Boston College and is passionate about the country&apos;s people, culture, and heritage.
                 </p>
               </div>
             </CardContent>
@@ -142,8 +132,7 @@ export function AboutPage() {
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/70">Our Mission</p>
                 <h2 className="mt-3 font-display text-2xl font-medium">Make local connection part of every journey.</h2>
                 <p className="mt-3 text-sm leading-6 text-white/80">
-                  We support independent local guides and help travellers discover immersive experiences that
-                  celebrate South Africa&apos;s diverse cultures, landscapes, and wildlife.
+                  Support independent guides and connect travellers with local experiences.
                 </p>
               </CardContent>
             </Card>
@@ -152,8 +141,7 @@ export function AboutPage() {
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Our Vision</p>
                 <h2 className="mt-3 font-display text-2xl font-medium">A world that travels closer to home.</h2>
                 <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                  We envision a thriving tourism ecosystem where local voices lead, travellers arrive with curiosity and
-                  humility, and economic benefits flow directly back into regional communities.
+                  A tourism economy led by local voices, with benefits returning to their communities.
                 </p>
               </CardContent>
             </Card>
@@ -189,11 +177,7 @@ export function AboutPage() {
       <Section>
         <Container>
           <div className="rounded-3xl bg-primary px-6 py-10 text-center text-primary-foreground sm:px-10 sm:py-14">
-            <h2 className="font-display text-3xl font-medium sm:text-4xl">Come see South Africa with us.</h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/80">
-              Whether you are planning an unforgettable visit or hoping to share your regional expertise, there is a place
-              for you at Nomsa.
-            </p>
+            <h2 className="font-display text-3xl font-medium sm:text-4xl">Explore or host an experience.</h2>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Button asChild className="bg-white text-primary hover:bg-white/90">
                 <Link href="/experiences">
@@ -309,7 +293,7 @@ export function DestinationsPage() {
       <Section className="pb-8 sm:pb-12">
         <Container>
           <PublicPageIntro
-            description="Explore South Africa by province, from savanna and mountain landscapes to coastal towns, living heritage, vineyard valleys, and local food."
+            description="Coast, mountains, wildlife, and heritage across nine provinces."
             eyebrow="Destinations"
             title="Many places. A thousand ways to feel at home."
           />
@@ -320,9 +304,8 @@ export function DestinationsPage() {
         <Container>
           <div className="mb-7 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm font-medium text-foreground">
-              Explore {destinations.length} destination regions across South Africa
+              {destinations.length} destination regions
             </p>
-            <p className="text-xs text-muted-foreground">Discover landscapes and local heritage across all nine provinces</p>
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {destinations.map((destination) => (
@@ -347,7 +330,6 @@ export function GuidesPage() {
       <Section className="pb-8 sm:pb-12">
         <Container>
           <PublicPageIntro
-            description="Meet the people who know these places best. Explore guide profiles by home region, languages, interests, and the experiences they currently lead."
             eyebrow="Local Guides"
             title="Meet the people who know the place."
           />
@@ -358,11 +340,8 @@ export function GuidesPage() {
         <Container>
           <div className="mb-7 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm font-medium text-foreground">
-              Showing {guides.length} local guide profiles
+              {guides.length} guide profiles
             </p>
-            <span className="inline-flex items-center gap-2 text-xs leading-relaxed text-muted-foreground">
-              <MapPin aria-hidden="true" className="shrink-0 text-primary" size={16} /> Browse each guide&apos;s listed home region and experience themes
-            </span>
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -383,13 +362,13 @@ export function GuidesPage() {
 
           <div className="mt-12 rounded-3xl bg-secondary/60 px-6 py-10 text-center sm:px-10">
             <UsersRound aria-hidden="true" className="mx-auto text-primary" size={28} />
-            <h2 className="mt-3 font-display text-2xl font-semibold">Have a region or story you love to share?</h2>
+            <h2 className="mt-3 font-display text-2xl font-semibold">Interested in becoming a guide?</h2>
             <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted-foreground">
-              We welcome guides, cultural storytellers, and wilderness enthusiasts who would like to share their perspective.
+              Share your local knowledge with travellers.
             </p>
             <Button asChild className="mt-6">
               <Link href="/become-a-guide">
-                Meet Nomsa as a guide
+                Become a guide
                 <ArrowRight aria-hidden="true" size={16} />
               </Link>
             </Button>
@@ -406,7 +385,7 @@ export function ExperiencesPage() {
       <Section className="pb-8 sm:pb-12">
         <Container>
           <PublicPageIntro
-            description="Slow down, look closer, and connect with the people who know South Africa intimately. Browse current listings and review each guide and experience before booking."
+            description="Browse current listings and review the guide and experience details before booking."
             eyebrow="Experiences"
             title="Experiences made personal."
           />
@@ -478,7 +457,7 @@ export function ExperiencesPage() {
           </div>
 
           <div className="mb-6 flex items-center justify-between text-xs text-muted-foreground">
-            <p>Showing {experiences.length} curated South African experiences</p>
+            <p>{experiences.length} experiences</p>
             <p>Filters are visual previews</p>
           </div>
 
@@ -500,7 +479,7 @@ export function BecomeGuidePage() {
       <Section className="pb-8 sm:pb-12">
         <Container>
           <PublicPageIntro
-            description="Share the landscapes, food, wildlife, heritage, and neighbourhood stories you know. Help travellers experience South Africa through the place you call home."
+            description="Share the places and stories you know with travellers."
             eyebrow="Become a Guide"
             title="Your home has a story. You can tell it."
           />
@@ -517,7 +496,6 @@ export function BecomeGuidePage() {
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 src="/images/south-africa/kapama-game-drive.jpg"
-                unoptimized
               />
             </div>
             <div>
@@ -528,22 +506,21 @@ export function BecomeGuidePage() {
                 Turn what you know into someone’s favourite day.
               </h2>
               <p className="mt-5 text-base leading-7 text-muted-foreground">
-                Nomsa is created for independent South African guides who want to share more than a standard itinerary.
-                Whether you lead wildlife tracking in Mpumalanga, walking tours through Soweto, or boutique wine pairings in Franschhoek,
-                we provide the platform to connect with travellers who value genuine regional connection.
+                Nomsa Tour Guides connects independent guides with travellers through experiences rooted in local knowledge,
+                from wildlife walks to Soweto tours and Winelands tastings.
               </p>
               <ul className="mt-6 grid gap-3 text-sm text-muted-foreground">
                 <li className="flex items-center gap-3">
                   <BadgeCheck aria-hidden="true" className="shrink-0 text-primary" size={18} />
-                  <span>Set your own schedules, pricing, and small-group group sizes</span>
+                  <span>Set your schedule, pricing, and group size</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <HeartHandshake aria-hidden="true" className="shrink-0 text-primary" size={18} />
-                  <span>Connect with respectful global travellers seeking authentic local perspective</span>
+                  <span>Meet travellers interested in local perspectives</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <Star aria-hidden="true" className="shrink-0 text-primary" size={18} />
-                  <span>Build your profile and reputation through traveller feedback</span>
+                  <span>Build your profile through guest feedback</span>
                 </li>
               </ul>
               <Button asChild className="mt-7" size="lg">
@@ -552,28 +529,16 @@ export function BecomeGuidePage() {
                   <ArrowRight aria-hidden="true" size={17} />
                 </Link>
               </Button>
-              <p className="mt-3 text-xs text-muted-foreground">
-                Our team will review your application and share the next steps.
+              <p className="mt-3 max-w-lg text-xs leading-5 text-muted-foreground">
+                Applications go to a dedicated review inbox, separate from general enquiries. The Nomsa team reviews
+                each one manually: pending, under review, then approved or rejected. Approved profiles require a
+                separate publication step; not every application is published.
               </p>
             </div>
           </div>
         </Container>
       </Section>
 
-      <Section className="bg-secondary/45">
-        <Container>
-          <div className="mx-auto max-w-3xl text-center">
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-primary">Rooted here. Ready to welcome.</p>
-            <h2 className="font-display text-3xl font-medium sm:text-4xl">
-              Local knowledge transforms the way someone sees South Africa.
-            </h2>
-            <p className="mt-4 text-sm leading-7 text-muted-foreground">
-              From first-time international visitors to domestic explorers, your unique perspective is what gives a journey its lasting meaning.
-              Join local hosts sharing their South African knowledge and stories.
-            </p>
-          </div>
-        </Container>
-      </Section>
     </>
   );
 }

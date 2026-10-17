@@ -95,6 +95,7 @@ export const registrationSchema = z
 export const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email("Enter a valid email address."),
   password: z.string().min(1, "Enter your password."),
+  totpCode: z.string().regex(/^\d{6}$/, "Enter the 6-digit code from your authenticator app.").optional().or(z.literal("")),
   callbackUrl: z.string().optional(),
 });
 
@@ -133,7 +134,12 @@ export const resendVerificationSchema = z.object({
 });
 
 export type RegistrationInput = z.input<typeof registrationSchema>;
+export type GuideRegistrationInput = z.input<typeof guideRegistrationSchema>;
 export type LoginInput = z.input<typeof loginSchema>;
+export const totpCodeSchema = z.object({
+  code: z.string().regex(/^\d{6}$/, "Enter the 6-digit code from your authenticator app."),
+});
+export type TotpCodeInput = z.input<typeof totpCodeSchema>;
 export type ForgotPasswordInput = z.input<typeof forgotPasswordSchema>;
 export type ResendVerificationInput = z.input<typeof resendVerificationSchema>;
 export type ResetPasswordInput = z.input<typeof resetPasswordSchema>;

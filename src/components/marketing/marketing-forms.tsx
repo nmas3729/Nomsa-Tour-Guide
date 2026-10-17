@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { ArrowRight, Send } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
@@ -45,10 +46,39 @@ export function NewsletterForm() {
 
 export function ContactForm() {
   const [message, setMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setMessage("Thanks for reaching out! Your message preview has been noted.");
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+    setMessage("");
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const payload = Object.fromEntries(formData.entries());
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const result: { error?: string } = await response.json();
+      if (!response.ok) {
+        setMessage(result.error ?? "Your message could not be sent. Please try again shortly.");
+        return;
+      }
+
+      setMessage("Thanks for reaching out! Your message has been sent.");
+      form.reset();
+    } catch {
+      setMessage("Your message could not be sent. Please check your connection and try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -78,14 +108,17 @@ export function ContactForm() {
         <Textarea className="min-h-36" id="contact-message" name="message" placeholder="Tell us about your upcoming plans..." required />
       </div>
       <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-        <Button className="h-12 px-7" type="submit">
-          Send message
-          <Send aria-hidden="true" size={16} />
+        <Button className="h-12 px-7" disabled={isSubmitting} type="submit">
+          {isSubmitting ? "Sending..." : "Send message"}
+          {!isSubmitting ? <Send aria-hidden="true" size={16} /> : null}
         </Button>
-        <p aria-live="polite" className="text-xs leading-5 text-muted-foreground">
-          {message || "We usually respond within 24 hours (Monday – Friday)."}
+        <p aria-live="polite" className="text-xs leading-5 text-muted-foreground" role="status">
+          {message || "Your message will be sent to the Nomsa team."}
         </p>
       </div>
+      <p className="text-xs leading-5 text-muted-foreground">
+        Read our <Link className="font-semibold text-primary underline underline-offset-4" href="/privacy">Privacy Notice</Link> to learn how we handle your information.
+      </p>
     </form>
   );
 }

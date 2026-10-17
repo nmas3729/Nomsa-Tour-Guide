@@ -170,10 +170,9 @@ export function ExperienceDetail({ data }: { data: ExperienceDetailData }) {
                 alt={data.images[activeImageIndex]?.caption || data.title}
                 className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                 fill
-                priority
+                preload
                 sizes="(max-width: 1024px) 100vw, 66vw"
                 src={data.images[activeImageIndex]?.url || data.images[0].url}
-                unoptimized
               />
               <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-100 transition-opacity duration-300 sm:opacity-0 sm:group-hover:opacity-100 motion-reduce:transition-none" />
               <span className="absolute bottom-5 left-5 z-30 max-w-[55%] text-left text-xs font-medium leading-relaxed text-white drop-shadow sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 motion-reduce:transition-none">
@@ -206,7 +205,6 @@ export function ExperienceDetail({ data }: { data: ExperienceDetailData }) {
                     fill
                     sizes="(max-width: 1024px) 25vw, 33vw"
                     src={img.url}
-                    unoptimized
                   />
                 </button>
               ))}
@@ -394,7 +392,7 @@ export function ExperienceDetail({ data }: { data: ExperienceDetailData }) {
                     <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Meet your host</p>
                     <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
                       <h2 className="font-display text-2xl font-semibold tracking-tight">Meet {guide.name}</h2>
-                      {guide.rating > 0 ? (
+                      {guide.rating !== undefined && guide.rating > 0 ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-card px-3 py-1.5 text-xs font-semibold text-foreground">
                           <Star aria-hidden="true" className="size-3.5 fill-accent text-accent" />
                           Guide rating {guide.rating.toFixed(1)}
@@ -680,7 +678,6 @@ export function ExperienceDetail({ data }: { data: ExperienceDetailData }) {
               className="object-contain"
               fill
               src={data.images[activeImageIndex]?.url || data.images[0].url}
-              unoptimized
             />
           </div>
           <div className="absolute bottom-6 flex gap-2">

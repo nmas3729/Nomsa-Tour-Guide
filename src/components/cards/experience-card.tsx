@@ -47,7 +47,6 @@ export function ExperienceCard({
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
           src={image}
-          unoptimized
         />
         <div aria-hidden="true" className="experience-card-image-shade absolute inset-0 z-20 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-70 transition-opacity duration-500 group-hover:opacity-55 motion-reduce:transition-none" />
 
@@ -85,33 +84,29 @@ export function ExperienceCard({
       <div className="experience-card-details flex flex-1 flex-col justify-between p-5">
         <div>
           {/* Guide Avatar & Rating row */}
-          <div className="flex items-center justify-between gap-3 text-xs">
-            {guide ? (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Avatar className="size-6 border border-border">
-                  {guide.image ? <AvatarImage alt={guide.name} src={guide.image} /> : null}
-                  <AvatarFallback className="text-[10px]">
-                    {guide.name.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="min-w-0 truncate font-medium text-foreground">{guide.name}</span>
-              </div>
-            ) : (
-              <span className="flex items-center gap-1 text-muted-foreground">
-                <Clock3 aria-hidden="true" size={13} /> {duration}
-              </span>
-            )}
+          {(guide || (rating !== undefined && (reviewCount ?? 0) > 0)) ? (
+            <div className="flex items-center justify-between gap-3 text-xs">
+              {guide ? (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Avatar className="size-6 border border-border">
+                    {guide.image ? <AvatarImage alt={guide.name} src={guide.image} /> : null}
+                    <AvatarFallback className="text-[10px]">
+                      {guide.name.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="min-w-0 truncate font-medium text-foreground">{guide.name}</span>
+                </div>
+              ) : null}
 
-            {rating !== undefined && (reviewCount ?? 0) > 0 ? (
-              <span className="flex items-center gap-1 font-semibold text-foreground">
-                <Star aria-hidden="true" className="fill-accent text-accent" size={13} />
-                {rating.toFixed(1)}
-                <span className="font-normal text-muted-foreground">({reviewCount})</span>
-              </span>
-            ) : (
-              <span className="text-muted-foreground">No guest rating yet</span>
-            )}
-          </div>
+              {rating !== undefined && (reviewCount ?? 0) > 0 ? (
+                <span className="flex items-center gap-1 font-semibold text-foreground">
+                  <Star aria-hidden="true" className="fill-accent text-accent" size={13} />
+                  {rating.toFixed(1)}
+                  <span className="font-normal text-muted-foreground">({reviewCount})</span>
+                </span>
+              ) : null}
+            </div>
+          ) : null}
 
           {/* Title */}
           <h3 className="experience-card-title mt-3 line-clamp-2 font-display text-lg font-semibold leading-snug tracking-tight text-foreground transition-colors duration-200 group-hover:text-primary">

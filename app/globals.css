@@ -243,6 +243,10 @@ body {
   backdrop-filter: blur(22px) saturate(1.2);
 }
 
+.mobile-navigation-dialog::backdrop {
+  background-color: rgb(0 0 0 / 45%);
+}
+
 .premium-card {
   border-color: color-mix(in srgb, var(--border) 88%, transparent);
   background-image:

@@ -59,8 +59,8 @@ export const detailedExperiences: Record<string, ExperienceDetailData> = {
     province: "Western Cape",
     category: "Culture",
     price: 650,
-    rating: 4.9,
-    reviewCount: 86,
+    rating: 0,
+    reviewCount: 0,
     duration: "2.5 hours",
     groupSize: "Max 10 guests",
     languages: ["English", "isiXhosa", "Afrikaans"],
@@ -144,38 +144,7 @@ export const detailedExperiences: Record<string, ExperienceDetailData> = {
         answer: "Contact Nomsa Tour Guides before booking to confirm arrangements for severe weather.",
       },
     ],
-    reviews: [
-      {
-        id: "r1",
-        name: "Sophie Laurent",
-        country: "France",
-        rating: 5,
-        date: "September 2026",
-        comment:
-          "Thandi is an extraordinary human being. She doesn't just recite facts; she connects you to the soul of her neighbours. The spice blending and warm koesisters were divine!",
-        helpfulCount: 24,
-      },
-      {
-        id: "r2",
-        name: "David & Sarah Miller",
-        country: "United Kingdom",
-        rating: 5,
-        date: "August 2026",
-        comment:
-          "Easily the highlight of our Cape Town stay. Way better than walking around alone snapping selfies. You leave with genuine understanding and deep respect.",
-        helpfulCount: 18,
-      },
-      {
-        id: "r3",
-        name: "Kwanele Zulu",
-        country: "South Africa",
-        rating: 5,
-        date: "July 2026",
-        comment:
-          "Even as a South African from Durban, I learned so much about the Cape Malay community. Authentic, warm, and delightfully tasty.",
-        helpfulCount: 12,
-      },
-    ],
+    reviews: [],
   },
   "greater-kruger-sunrise-safari": {
     slug: "greater-kruger-sunrise-safari",
@@ -185,8 +154,8 @@ export const detailedExperiences: Record<string, ExperienceDetailData> = {
     province: "Mpumalanga & Limpopo",
     category: "Safari",
     price: 1850,
-    rating: 5.0,
-    reviewCount: 54,
+    rating: 0,
+    reviewCount: 0,
     duration: "5 hours",
     groupSize: "Max 8 guests",
     languages: ["English", "siSwati", "Tsonga"],
@@ -265,18 +234,7 @@ export const detailedExperiences: Record<string, ExperienceDetailData> = {
         answer: "Wildlife sightings cannot be guaranteed. Trackers look for signs of animal activity, but wildlife moves freely across the reserve.",
       },
     ],
-    reviews: [
-      {
-        id: "k1",
-        name: "Lukas & Greta Weber",
-        country: "Germany",
-        rating: 5,
-        date: "October 2026",
-        comment:
-          "Sipho is a wizard. He smelled wild sage, stopped the cruiser, and ten seconds later a female leopard walked right past us. Unbelievable respect for the animals.",
-        helpfulCount: 31,
-      },
-    ],
+    reviews: [],
   },
 };
 
@@ -300,8 +258,8 @@ export function getExperienceDetail(slug: string): ExperienceDetailData | null {
     province: listing.provinces.join(" & "),
     category: listing.category,
     price: listing.price,
-    rating: listing.rating,
-    reviewCount: listing.reviewCount,
+    rating: 0,
+    reviewCount: 0,
     duration: listing.duration,
     languages: guide?.languages,
     images: [

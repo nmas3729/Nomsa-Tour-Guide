@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { BookingFlow } from "@/src/components/booking/booking-flow";
 import { PublicLayout } from "@/src/components/marketing/public-layout";
 import { getExperienceDetail } from "@/src/data/experience-details";
@@ -25,9 +26,10 @@ export async function generateMetadata({
   }
 
   return publicPageMetadata({
-    title: `Book: ${data.title} | Nomsa Tour Guides`,
+    title: `Book: ${data.title}`,
     description: `Review booking details for ${data.title} in ${data.destination}, ${data.province}.`,
     path: `/experiences/${slug}/book`,
+    robots: { index: false, follow: false },
   });
 }
 
@@ -43,9 +45,12 @@ export default async function BookingPage({
     notFound();
   }
 
+  await connection();
+  const minimumBookingDate = new Date().toISOString().slice(0, 10);
+
   return (
     <PublicLayout>
-      <BookingFlow experience={data} />
+      <BookingFlow experience={data} minimumBookingDate={minimumBookingDate} />
     </PublicLayout>
   );
 }

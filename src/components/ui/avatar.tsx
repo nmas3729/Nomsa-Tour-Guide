@@ -22,6 +22,7 @@ export function AvatarImage({
   onError,
   ...props
 }: Omit<ImageProps, "fill" | "sizes">) {
+  const isLocalImage = typeof props.src === "string" && props.src.startsWith("/");
   return (
     <Image
       alt={alt}
@@ -32,8 +33,8 @@ export function AvatarImage({
         onError?.(event);
       }}
       sizes="64px"
-      unoptimized
       {...props}
+      unoptimized={!isLocalImage}
     />
   );
 }

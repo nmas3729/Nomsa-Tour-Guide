@@ -10,6 +10,9 @@ import { enforceAuthRateLimits, RateLimitExceededError } from "@/src/features/au
 import { createAuthEventLogger, hashOpaqueToken } from "@/src/features/auth/lib/tokens";
 import {
   changeAccountPassword,
+  beginAuthenticatorSetup,
+  confirmAuthenticatorSetup,
+  InvalidAuthenticatorCodeError,
   InvalidAuthTokenError,
   InvalidCredentialsError,
   registerAccount,
@@ -24,8 +27,10 @@ import {
   forgotPasswordSchema,
   resendVerificationSchema,
   resetPasswordSchema,
+  totpCodeSchema,
 } from "@/src/features/auth/schemas";
 import { getCurrentUser } from "@/src/lib/auth/session";
+import { hasVerifiedAuthenticator, requiresAuthenticatorApp } from "@/src/features/auth/lib/privileged-mfa";
 
 async function getClientAddress(): Promise<string> {
   const requestHeaders = await headers();
@@ -91,12 +96,13 @@ export async function loginAction(input: unknown): Promise<AuthActionResult> {
     };
   }
 
-  const redirectTo = safeReturnPath(parsed.data.callbackUrl);
+  const redirectTo = safeReturnPath(parsed.data.callbackUrl, "/dashboard");
 
   try {
     const result = await signIn("credentials", {
       email: parsed.data.email,
       password: parsed.data.password,
+      totpCode: parsed.data.totpCode,
       redirect: false,
       redirectTo,
     });
@@ -108,7 +114,9 @@ export async function loginAction(input: unknown): Promise<AuthActionResult> {
         message:
           errorCode === "rate_limited"
             ? "Too many sign-in attempts. Please wait and try again."
-            : "We couldn't sign you in. Check your details, verify your email, or contact support if your guide application is pending.",
+            : errorCode === "invalid_authenticator_code"
+              ? "That authenticator code is invalid or expired. Try the current 6-digit code."
+              : "We couldn't sign you in. Check your details, verify your email, or contact support if your guide application is pending.",
       };
     }
 
@@ -285,6 +293,13 @@ export async function changePasswordAction(input: unknown): Promise<AuthActionRe
   if (!principal) {
     return { success: false, message: "Your session has expired. Sign in again." };
   }
+  if (!hasVerifiedAuthenticator(principal)) {
+    return {
+      success: false,
+      message: "Two-factor authentication is required for this account. Complete setup before continuing.",
+      redirectTo: "/account/security/two-factor",
+    };
+  }
 
   try {
     await changeAccountPassword(principal, parsed.data.currentPassword, parsed.data.password);
@@ -303,5 +318,76 @@ export async function changePasswordAction(input: unknown): Promise<AuthActionRe
       errorName: error instanceof Error ? error.name : "UnknownError",
     });
     return { success: false, message: "We couldn't change your password right now." };
+  }
+}
+
+export async function beginAuthenticatorSetupAction(): Promise<{
+  success: boolean;
+  message: string;
+  secret?: string;
+  uri?: string;
+}> {
+  const principal = await getCurrentUser();
+  if (!principal) {
+    return { success: false, message: "Your session has expired. Sign in again." };
+  }
+  if (!requiresAuthenticatorApp(principal.role)) {
+    return { success: false, message: "Authenticator setup is required only for guide and admin accounts." };
+  }
+  try {
+    const setup = await beginAuthenticatorSetup(principal);
+    return {
+      success: true,
+      message: "Add this account to your authenticator app, then enter the 6-digit code.",
+      ...setup,
+    };
+  } catch (error) {
+    createAuthEventLogger("mfa.setup_action", {
+      outcome: "failed",
+      errorName: error instanceof Error ? error.name : "UnknownError",
+      userId: principal.id,
+    });
+    return { success: false, message: "Authenticator setup could not be started. Please try again." };
+  }
+}
+
+export async function confirmAuthenticatorSetupAction(input: unknown): Promise<AuthActionResult> {
+  const parsed = totpCodeSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, message: "Enter the 6-digit code from your authenticator app." };
+  }
+
+  const principal = await getCurrentUser();
+  if (!principal) {
+    return { success: false, message: "Your session has expired. Sign in again." };
+  }
+  try {
+    await enforceAuthRateLimits({
+      action: "mfa-setup-confirm",
+      identifier: principal.id,
+      clientAddress: await getClientAddress(),
+      limit: 5,
+      addressLimit: 20,
+      windowMs: 15 * 60 * 1000,
+    });
+    await confirmAuthenticatorSetup(principal, parsed.data.code);
+    return {
+      success: true,
+      message: "Authenticator app verification is enabled. Sign in again with your password and current 6-digit code.",
+      redirectTo: "/login?mfaEnabled=1",
+    };
+  } catch (error) {
+    if (error instanceof RateLimitExceededError) {
+      return { success: false, message: error.message };
+    }
+    if (error instanceof InvalidAuthenticatorCodeError) {
+      return { success: false, message: error.message };
+    }
+    createAuthEventLogger("mfa.confirm_action", {
+      outcome: "failed",
+      errorName: error instanceof Error ? error.name : "UnknownError",
+      userId: principal.id,
+    });
+    return { success: false, message: "Authenticator setup could not be confirmed. Please try again." };
   }
 }

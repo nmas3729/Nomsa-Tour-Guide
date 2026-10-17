@@ -5,7 +5,7 @@ import { publicPageMetadata } from "@/src/lib/seo";
 
 export const metadata: Metadata = publicPageMetadata({
   title: "Contact Us",
-  description: "Get in touch with the Nomsa Tour Guides team in South Africa.",
+  description: "Contact Nomsa Tour Guides about experiences, bookings, or guiding.",
   path: "/contact",
 });
 

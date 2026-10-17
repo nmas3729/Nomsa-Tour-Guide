@@ -113,6 +113,9 @@ model User {
   role           UserRole  @default(CUSTOMER)
   emailVerified  DateTime? @db.Timestamptz(3)
   isActive       Boolean   @default(true)
+  totpSecretEncrypted String?
+  totpEnabledAt  DateTime? @db.Timestamptz(3)
+  totpLastUsedStep BigInt?
   sessionVersion Int       @default(0)
   deletedAt      DateTime? @db.Timestamptz(3)
   createdAt      DateTime  @default(now()) @db.Timestamptz(3)

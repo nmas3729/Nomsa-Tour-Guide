@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
@@ -13,6 +14,16 @@ import { PublicLayout } from "@/src/components/marketing/public-layout";
 import { getCurrentUser } from "@/src/lib/auth/session";
 import { formatCurrency, formatDate } from "@/src/lib/format";
 import { getDashboardData } from "@/src/server/services/dashboard-service";
+import {
+  guideApplicationStatusDescription,
+  guideApplicationStatusLabel,
+} from "@/src/features/auth/guide-application-status";
+import { requiresAuthenticatorApp } from "@/src/features/auth/lib/privileged-mfa";
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+  robots: { index: false, follow: false },
+};
 
 function Metric({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
   return (
@@ -50,6 +61,9 @@ async function DashboardContent() {
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login?callbackUrl=%2Fdashboard");
+  }
+  if (requiresAuthenticatorApp(user.role) && !user.mfaVerified) {
+    redirect("/account/security/two-factor");
   }
 
   const data = await getDashboardData(user);
@@ -366,11 +380,13 @@ async function DashboardContent() {
             <Card className="dashboard-panel mt-6">
               <CardContent className="flex flex-wrap items-center justify-between gap-3 p-6">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Host verification</p>
-                  <p className="mt-1 text-sm text-muted-foreground">Your standing with Nomsa Tour Guides.</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Application status</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {guideApplicationStatusDescription(data.applicationStatus)}
+                  </p>
                 </div>
-                <Badge variant={data.verificationStatus === "APPROVED" ? "success" : "warning"}>
-                  {data.verificationStatus.replaceAll("_", " ")}
+                <Badge variant={data.applicationStatus === "APPROVED" ? "success" : "warning"}>
+                  {guideApplicationStatusLabel(data.applicationStatus)}
                 </Badge>
               </CardContent>
             </Card>

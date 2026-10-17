@@ -3,6 +3,7 @@ import "server-only";
 import { UserRole } from "@/src/server/db/generated/client";
 import { getCurrentUser } from "@/src/lib/auth/session";
 import type { AuthenticatedPrincipal } from "@/src/features/auth/types";
+import { hasVerifiedAuthenticator } from "@/src/features/auth/lib/privileged-mfa";
 
 export type Permission =
   | "account:read"
@@ -55,6 +56,12 @@ export async function requireAuth(): Promise<AuthenticatedPrincipal> {
   const principal = await getCurrentUser();
   if (!principal) {
     throw new AuthorizationError("UNAUTHENTICATED", "Sign in is required.");
+  }
+  if (!hasVerifiedAuthenticator(principal)) {
+    throw new AuthorizationError(
+      "FORBIDDEN",
+      "Two-factor authentication is required for this account.",
+    );
   }
   return principal;
 }

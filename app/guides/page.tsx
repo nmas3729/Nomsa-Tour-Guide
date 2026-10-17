@@ -4,8 +4,8 @@ import { PublicLayout } from "@/src/components/marketing/public-layout";
 import { publicPageMetadata } from "@/src/lib/seo";
 
 export const metadata: Metadata = publicPageMetadata({
-  title: "Meet Local Tour Guides",
-  description: "Meet South African local guides who share their knowledge, stories and favourite places.",
+  title: "Local Tour Guides",
+  description: "Browse guide profiles, specialties, languages, and listed experiences.",
   path: "/guides",
 });
 

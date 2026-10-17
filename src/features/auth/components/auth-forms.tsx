@@ -71,6 +71,21 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
       <AuthField id="login-password" label="Password" error={form.formState.errors.password?.message}>
         <Input autoComplete="current-password" id="login-password" type="password" {...form.register("password")} />
       </AuthField>
+      <AuthField
+        id="login-totp-code"
+        label="Authenticator app code"
+        hint="Required for guide and admin accounts. Travellers can leave this blank."
+        error={form.formState.errors.totpCode?.message}
+      >
+        <Input
+          autoComplete="one-time-code"
+          id="login-totp-code"
+          inputMode="numeric"
+          maxLength={6}
+          pattern="[0-9]{6}"
+          {...form.register("totpCode")}
+        />
+      </AuthField>
       <div className="auth-inline-link">
         <Link href="/forgot-password">Forgot password?</Link>
       </div>
@@ -138,6 +153,9 @@ export function RegistrationForm() {
       </AuthField>
       {guideRegistration ? (
         <>
+          <p className="auth-hint">
+            Guide applications are reviewed manually by the Nomsa team. Approval does not automatically publish a profile.
+          </p>
           <AuthField id="register-phone" label="Phone" error={form.formState.errors.phone?.message}>
             <Input autoComplete="tel" id="register-phone" type="tel" {...form.register("phone")} />
           </AuthField>
@@ -181,6 +199,12 @@ export function RegistrationForm() {
       </AuthField>
       {notice ? <AuthNotice message={notice.message} success={notice.success} /> : null}
       <AuthSubmitButton pending={form.formState.isSubmitting}>Create account</AuthSubmitButton>
+      <p className="text-center text-xs leading-5 text-muted-foreground">
+        Your information is handled according to our{" "}
+        <Link className="font-semibold text-primary underline underline-offset-4" href="/privacy">
+          Privacy Notice
+        </Link>.
+      </p>
       <p className="auth-switch">Already registered? <Link href="/login">Sign in</Link></p>
     </form>
   );

@@ -13,8 +13,9 @@ vi.mock("@/src/components/booking/booking-confirmation-view", () => ({
 describe("/booking/confirmation page", () => {
   it("uses neutral booking-details metadata instead of claiming success before lookup", () => {
     expect(metadata).toMatchObject({
-      title: "Booking Details | Nomsa Tour Guides",
-      description: "Review your South African experience booking and current payment status.",
+      title: "Booking Details",
+      description: "Review your booking details and payment status.",
+      robots: { index: false, follow: false },
     });
   });
 

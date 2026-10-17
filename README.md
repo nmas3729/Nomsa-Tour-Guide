@@ -62,7 +62,7 @@ Configure Coolify's **Pre-deployment Command** as `npx prisma migrate deploy`. T
 
 Create the first migration locally against a local PostgreSQL database with `npx prisma migrate dev --name init`, then commit the resulting `prisma/migrations/` directory. Do not run `migrate dev` or `db push` against the Coolify database. The generated Prisma client in `src/server/db/generated/` is build output and is gitignored.
 
-In Coolify, also configure the required runtime application secrets and service credentials: `AUTH_SECRET`, `AUTH_TOKEN_SECRET`, and (for production outside Vercel) `AUTH_URL`; configure `NEXT_PUBLIC_APP_URL`, `RESEND_API_KEY`, and `EMAIL_FROM` for email flows; PayFast credentials and settings for payments; `CLEANUP_CRON_SECRET` for the scheduled availability cleanup; and the three `CLOUDINARY_*` values for uploads. Use unique production secrets, not the placeholders in `.env.example`.
+In Coolify, also configure the required runtime application secrets and service credentials: `AUTH_SECRET`, `AUTH_TOKEN_SECRET`, and (for production outside Vercel) `AUTH_URL`; configure `MFA_ENCRYPTION_KEY` as a separate random secret of at least 32 characters for encrypted authenticator seeds; configure `NEXT_PUBLIC_APP_URL` and `NEXT_PUBLIC_SITE_URL` to the canonical HTTPS origin `https://nomsatourguides.co.za` (`NEXT_PUBLIC_SITE_URL` controls canonical, sitemap, and robots metadata); configure `RESEND_API_KEY` and `EMAIL_FROM` for authentication email flows; set `GUIDE_APPLICATION_TO_EMAIL` to the dedicated guide review inbox (defaults to `guides@nomsatourguides.co.za`) and optionally `GUIDE_APPLICATION_FROM_EMAIL` (defaults to `EMAIL_FROM`); set `BILLING_FROM_EMAIL=billing@nomsatourguides.co.za` for approved-booking invoices and verify the sending domain with Resend; PayFast credentials and settings for payments; `CLEANUP_CRON_SECRET` for the scheduled availability cleanup; and the three `CLOUDINARY_*` values for uploads. Use unique production secrets, not the placeholders in `.env.example`.
 
 Booking capacity is reserved for 30 minutes while PayFast checkout is pending. Configure `CLEANUP_CRON_SECRET` and schedule an authenticated `POST /api/cron/availability-cleanup` at least every five minutes with `Authorization: Bearer <CLEANUP_CRON_SECRET>`. The endpoint processes up to 100 expired reservations per call and reports whether another run is needed.
 
@@ -77,16 +77,23 @@ Copy `.env.example` to `.env` and configure the database, Auth.js secrets, and e
 | `DATABASE_URL` | Yes | PostgreSQL connection string used by Prisma. |
 | `AUTH_SECRET` | Yes | Auth.js JWT encryption/signing secret. Use a unique cryptographically random value of at least 32 characters. |
 | `AUTH_TOKEN_SECRET` | Yes | Separate secret used to key authentication rate-limit identifiers. |
+| `MFA_ENCRYPTION_KEY` | For guide/admin authenticator setup | Separate random secret of at least 32 characters used to encrypt TOTP seeds. Preserve it; existing enrolled accounts cannot verify without it. |
 | `AUTH_URL` | Production, unless the trusted host platform provides it | Canonical Auth.js application URL; Vercel supplies a trusted host environment automatically. |
 | `NEXT_PUBLIC_APP_URL` | For email flows | Canonical public origin used to generate verification and password-reset links. |
+| `NEXT_PUBLIC_SITE_URL` | Production | Canonical website URL used for page metadata, `robots.txt`, and `sitemap.xml`; defaults to `https://nomsatourguides.co.za`. |
 | `RESEND_API_KEY` | For email flows | Resend API key. |
 | `EMAIL_FROM` | For email flows | Verified sender address, for example `hello@example.com`. |
+| `GUIDE_APPLICATION_TO_EMAIL` | For guide applications | Dedicated review inbox; defaults to `guides@nomsatourguides.co.za`. |
+| `GUIDE_APPLICATION_FROM_EMAIL` | Optional | Verified sender for guide application notifications; defaults to `EMAIL_FROM`. |
+| `BILLING_FROM_EMAIL` | For approved-booking invoices | Must be `billing@nomsatourguides.co.za`; verify the sender domain with Resend. |
 
 Generate secrets independently; do not reuse `AUTH_SECRET` as `AUTH_TOKEN_SECRET`:
 
 ```bash
 openssl rand -base64 48
 ```
+
+Guide, admin, and super-admin accounts must enroll an authenticator app before accessing protected account areas. Enrollment stores an encrypted TOTP seed; successful authenticator codes are single-use within their time step. Customers can continue signing in without two-factor authentication.
 
 Then run database validation and generate/apply the Prisma schema:
 
@@ -99,7 +106,7 @@ npm run dev
 
 The authentication entry point is `auth.ts`, with the Auth.js endpoints mounted at `/api/auth/*`. The application uses JWT sessions with HTTP-only, secure-in-production cookies. Current-user helpers validate the live user record and session version; the Next.js 16 `proxy.ts` performs optimistic route checks, and server-side role helpers remain authoritative. Customer accounts activate after email verification. Guide accounts create a pending application and remain blocked until the application is approved and the account activated. Administrator roles cannot be self-registered.
 
-Registration, login, email verification, reset, and resend actions have database-backed fixed-window rate limits. Verification and password-reset links are random, single-use, time-limited tokens; only SHA-256 token digests are stored. Passwords are hashed with Argon2id. Configure Resend before invoking registration or email actions. Never use development placeholder credentials in production, and set `AUTH_URL` and `NEXT_PUBLIC_APP_URL` to the same HTTPS origin for deployment.
+Registration, login, email verification, reset, and resend actions have database-backed fixed-window rate limits. Verification and password-reset links are random, single-use, time-limited tokens; only SHA-256 token digests are stored. Passwords are hashed with Argon2id. Configure Resend before invoking registration or email actions. Never use development placeholder credentials in production, and set `AUTH_URL`, `NEXT_PUBLIC_APP_URL`, and `NEXT_PUBLIC_SITE_URL` to the same canonical HTTPS origin for deployment.
 
 Authentication routes currently implemented: `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`, and `/account/change-password`.
 
@@ -138,7 +145,7 @@ Use semantic HTML, associate each form control with a visible label, provide acc
 
 The public-facing site is implemented with App Router Server Components and shared Stage 5 components. Public routes are `/`, `/about`, `/contact`, `/destinations`, `/guides`, `/experiences`, `/become-a-guide`, `/privacy`, `/terms`, and `/404`; unmatched paths use the same branded not-found screen. The sticky navigation and footer link to the public routes and existing account entry points.
 
-All sample destinations, experiences, guides, categories, and testimonials are local mock content in `src/data/public-site.ts`. They are not queried from Prisma and do not represent live inventory or verified marketplace activity. Search fields, experience filters, contact form, and newsletter form are presentation previews only; they do not perform searches, submit or store contact details, send email, create bookings, or process payments. The guide CTA links to the existing guide registration flow. Public metadata, canonical paths, Open Graph, and Twitter cards are configured per route using the Next.js Metadata API.
+Destinations, experience cards, guide cards, categories, and testimonials are local illustrative content in `src/data/public-site.ts`; they are not queried from Prisma and must not be presented as verified marketplace activity. Search and filters operate on that local catalogue only. Contact messages are sent through Resend, guide applications are recorded for manual review, and the booking flow creates a reservation only when a matching published database experience and available capacity exist, then redirects to PayFast checkout. The newsletter remains a non-submitting preview. There is currently no seed script or in-app experience publishing workflow, so production must have verified published experience and availability records provisioned before bookings can succeed. Public routes use editable route metadata, canonical URLs, Open Graph/Twitter cards, `robots.txt`, and `sitemap.xml`; set `NEXT_PUBLIC_SITE_URL` to the production canonical origin.
 
 ## Source layout
 

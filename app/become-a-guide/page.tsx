@@ -5,7 +5,7 @@ import { publicPageMetadata } from "@/src/lib/seo";
 
 export const metadata: Metadata = publicPageMetadata({
   title: "Become a Local Guide",
-  description: "Share what you love about South Africa and help travellers discover it from your perspective.",
+  description: "Share your local knowledge with travellers as a Nomsa guide.",
   path: "/become-a-guide",
 });
 

@@ -13,4 +13,5 @@ export type AuthenticatedPrincipal = {
   name: string;
   role: UserRole;
   sessionVersion: number;
+  mfaVerified: boolean;
 };
