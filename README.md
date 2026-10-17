@@ -50,9 +50,19 @@ npm run db:generate
 npm run db:migrate
 ```
 
-`db:migrate` runs Prisma Migrate interactively against the configured development database. The generated client is written to `src/server/db/generated/` and is not committed. The production build runs `prisma generate` before `next build`, so `DATABASE_URL` must also be configured in the build environment.
+`db:migrate` runs Prisma Migrate interactively against the configured development database. The generated client is written to `src/server/db/generated/` and is not committed. The production build runs `prisma generate` before `next build`; `prisma.config.ts` uses a localhost placeholder URL for generation when `DATABASE_URL` is unset.
 
 For a fresh production database, apply committed migrations with `npx prisma migrate deploy`. Existing databases that were created without migration history must be reviewed and baselined before deployment; do not apply the initial migration over an untracked populated schema.
+
+### Deployment (Coolify)
+
+Set `DATABASE_URL` as a **runtime-only** environment variable on the Coolify app. Keep its Build Variable toggle **off**: the Prisma config has a placeholder fallback for client generation during the build, while the app needs the real Coolify-internal connection URL at runtime. The database hostname is an internal network alias and will not resolve from a developer laptop. For local access, use an SSH tunnel (`ssh -L 5432:<db-alias>:5432 user@host`) or enable the database's public port.
+
+Configure Coolify's **Pre-deployment Command** as `npx prisma migrate deploy`. This applies committed schema changes before the new container starts; without it, the app can boot while database queries fail because the schema is missing or outdated.
+
+Create the first migration locally against a local PostgreSQL database with `npx prisma migrate dev --name init`, then commit the resulting `prisma/migrations/` directory. Do not run `migrate dev` or `db push` against the Coolify database. The generated Prisma client in `src/server/db/generated/` is build output and is gitignored.
+
+In Coolify, also configure the required runtime application secrets and service credentials: `AUTH_SECRET`, `AUTH_TOKEN_SECRET`, and (for production outside Vercel) `AUTH_URL`; configure `NEXT_PUBLIC_APP_URL`, `RESEND_API_KEY`, and `EMAIL_FROM` for email flows; PayFast credentials and settings for payments; `CLEANUP_CRON_SECRET` for the scheduled availability cleanup; and the three `CLOUDINARY_*` values for uploads. Use unique production secrets, not the placeholders in `.env.example`.
 
 Booking capacity is reserved for 30 minutes while PayFast checkout is pending. Configure `CLEANUP_CRON_SECRET` and schedule an authenticated `POST /api/cron/availability-cleanup` at least every five minutes with `Authorization: Bearer <CLEANUP_CRON_SECRET>`. The endpoint processes up to 100 expired reservations per call and reports whether another run is needed.
 
