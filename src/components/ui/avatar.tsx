@@ -25,7 +25,7 @@ export function AvatarImage({
   return (
     <Image
       alt={alt}
-      className={cn("absolute inset-0 z-10 size-full object-cover", className)}
+      className={cn("avatar-image absolute inset-0 z-10 size-full object-cover", className)}
       fill
       onError={(event) => {
         event.currentTarget.hidden = true;

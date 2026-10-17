@@ -503,12 +503,7 @@ export function ExperiencesListing() {
                 <div className="relative mb-8 h-80 w-full overflow-hidden rounded-3xl border border-border bg-[#e5ece4] p-6 text-center dark:bg-[#1a2720]">
                   <div
                     aria-hidden="true"
-                    className="absolute inset-0 opacity-40"
-                    style={{
-                      backgroundImage:
-                        "linear-gradient(45deg, transparent 48%, rgb(31 94 74 / 20%) 49%, rgb(31 94 74 / 20%) 51%, transparent 52%), linear-gradient(-45deg, transparent 48%, rgb(31 94 74 / 20%) 49%, rgb(31 94 74 / 20%) 51%, transparent 52%)",
-                      backgroundSize: "40px 40px",
-                    }}
+                    className="experience-map-grid absolute inset-0 opacity-40"
                   />
                   <div className="relative flex h-full flex-col items-center justify-center">
                     <span className="grid size-12 place-items-center rounded-full bg-primary text-white shadow-lg">

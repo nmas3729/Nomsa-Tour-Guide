@@ -411,6 +411,19 @@ export async function cleanupExpiredBookingReservations(now = new Date()) {
   return { expiredCount, morePending: morePending > 0 };
 }
 
+/**
+ * Processes a PayFast Instant Transaction Notification (ITN) and advances
+ * persisted booking/payment states.
+ *
+ * Refund visibility note: this is the only place refund-adjacent states are
+ * written, and there is intentionally no automated refund execution flow in
+ * this release. A COMPLETE notification arriving after a reservation expired
+ * (or for an already-cancelled booking) is recorded as
+ * booking REFUND_REQUESTED / payment REFUND_PENDING so the UI can show
+ * "refund pending" honestly. PayFast never sends a supported ITN that moves
+ * a payment to REFUNDED, and no provider refund call exists here — the UI
+ * must never claim a refund completed unless persisted REFUNDED states say so.
+ */
 export async function processPayFastITN(
   itnData: Record<string, string>,
   rawBody: string,

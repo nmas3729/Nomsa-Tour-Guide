@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
+  ArrowLeft,
   ArrowRight,
   BadgeCheck,
   Clock3,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent } from "@/src/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
 import { ExperienceCard } from "@/src/components/cards/experience-card";
 import { GuideCard } from "@/src/components/cards/guide-card";
 import { DestinationCard } from "@/src/components/cards/destination-card";
@@ -58,13 +60,13 @@ export function AboutPage() {
       <Section className="pt-6">
         <Container>
           <div className="grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
-            <div className="relative min-h-[360px] overflow-hidden rounded-[2rem] bg-muted sm:min-h-[480px]">
+            <div className="relative isolate min-h-[360px] overflow-hidden rounded-[2rem] bg-muted sm:min-h-[480px]">
               <Image
-                alt="Panoramic view overlooking the lush green escarpment of the Blyde River Canyon in South Africa"
+                alt="The Three Rondavels rising above the Blyde River Canyon in Mpumalanga"
                 className="object-cover"
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
-                src="https://images.unsplash.com/photo-1509099836639-18ba1795216d?auto=format&fit=crop&w=1200&q=85"
+                src="/images/south-africa/blyde-three-rondavels.jpg"
                 unoptimized
               />
             </div>
@@ -85,6 +87,50 @@ export function AboutPage() {
               </p>
             </div>
           </div>
+        </Container>
+      </Section>
+
+      <Section className="pt-0">
+        <Container>
+          <Card className="overflow-hidden border-border/70 shadow-none">
+            <CardContent className="grid p-0 md:grid-cols-[0.8fr_1.2fr]">
+              <div className="relative aspect-[4/5] min-h-[320px] overflow-hidden bg-secondary sm:min-h-[420px]">
+                <Avatar className="size-full rounded-none bg-secondary">
+                  <AvatarImage
+                    alt="Nomsa Bambisa, Head of Nomsa Tour Guides"
+                    className="object-cover object-top"
+                    src="/images/nomsa.png"
+                  />
+                  <AvatarFallback className="rounded-none text-5xl font-semibold text-primary">
+                    NB
+                  </AvatarFallback>
+                </Avatar>
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-primary/30 via-transparent to-transparent" />
+              </div>
+              <div className="flex flex-col justify-center p-6 sm:p-10 lg:p-14">
+                <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                  The person behind the journey
+                </p>
+                <h2 className="font-display text-3xl font-medium leading-tight sm:text-4xl">
+                  Nomsa Bambisa
+                </h2>
+                <p className="mt-3 text-sm font-medium leading-6 text-muted-foreground sm:text-base">
+                  Head of Nomsa Tour Guides
+                  <span aria-hidden="true"> | </span>
+                  <span className="block sm:inline">Shareholder, NMAS INNOVATIONS (Pty) Ltd</span>
+                </p>
+                <p className="mt-6 text-sm leading-7 text-muted-foreground sm:text-base">
+                  Nomsa Bambisa leads Nomsa Tour Guides, the tourism division of NMAS INNOVATIONS (Pty) Ltd. With a
+                  background in Travel and Tourism from Boston College, she is passionate about showcasing the beauty,
+                  culture, heritage, and diversity of South Africa.
+                </p>
+                <p className="mt-4 text-sm leading-7 text-muted-foreground sm:text-base">
+                  Through her leadership, Nomsa is committed to creating authentic, meaningful, and memorable travel
+                  experiences that connect visitors with the people, places, and stories that make South Africa unique.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </Container>
       </Section>
 
@@ -239,12 +285,7 @@ export function ContactPage() {
               >
                 <div
                   aria-hidden="true"
-                  className="absolute inset-0 opacity-50"
-                  style={{
-                    backgroundImage:
-                      "linear-gradient(45deg, transparent 48%, rgb(128 148 129 / 18%) 49%, rgb(128 148 129 / 18%) 51%, transparent 52%), linear-gradient(-45deg, transparent 48%, rgb(128 148 129 / 18%) 49%, rgb(128 148 129 / 18%) 51%, transparent 52%)",
-                    backgroundSize: "36px 36px",
-                  }}
+                  className="contact-map-grid absolute inset-0 opacity-50"
                 />
                 <span className="relative grid size-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg">
                   <MapPin aria-hidden="true" size={22} />
@@ -469,13 +510,13 @@ export function BecomeGuidePage() {
       <Section className="pt-6">
         <Container>
           <div className="grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
-            <div className="relative min-h-[350px] overflow-hidden rounded-[2rem] bg-muted sm:min-h-[460px]">
+            <div className="relative isolate min-h-[350px] overflow-hidden rounded-[2rem] bg-muted sm:min-h-[460px]">
               <Image
-                alt="Experienced South African guide leading guests on an open safari game drive"
+                alt="Guests viewing wildlife from a safari vehicle at Kapama Game Reserve"
                 className="object-cover"
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
-                src="https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=1200&q=85"
+                src="/images/south-africa/kapama-game-drive.jpg"
                 unoptimized
               />
             </div>
@@ -551,10 +592,9 @@ export function NotFoundPage() {
             We couldn&apos;t find the page you&apos;re looking for. It may have moved, or the link may be outdated. Let&apos;s get you back to familiar trails.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button asChild>
-              <Link href="/">
-                Back to home
-                <ArrowRight aria-hidden="true" size={16} />
+            <Button asChild size="icon">
+              <Link aria-label="Back to home" href="/">
+                <ArrowLeft aria-hidden="true" size={18} />
               </Link>
             </Button>
             <Button asChild variant="outline">

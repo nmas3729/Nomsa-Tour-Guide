@@ -33,6 +33,7 @@ import { GuideCard } from "@/src/components/cards/guide-card";
 import { DestinationCard } from "@/src/components/cards/destination-card";
 import { Container } from "@/src/components/layout/container";
 import { Section } from "@/src/components/layout/section";
+import { imageAlt } from "@/src/lib/image";
 import { FadeIn, FadeInScale, SlideIn } from "@/src/components/ui/motion";
 import { NewsletterForm } from "./marketing-forms";
 import { categories, destinations, experiences, guides, provinces, testimonials } from "@/src/data/public-site";
@@ -110,12 +111,12 @@ function HomeHero() {
   return (
     <section className="home-hero relative isolate -mt-20 flex min-h-[100svh] flex-col justify-between overflow-hidden bg-[#040706] text-white">
       <Image
-        alt="Golden sunrise over Table Mountain and Lion's Head overlooking Cape Town, South Africa"
+        alt="Cape Town's coastline and city beneath the distinctive Table Mountain plateau"
         className="home-hero-image absolute inset-0 -z-30 object-cover object-center"
         fill
         priority
         sizes="100vw"
-        src="https://images.unsplash.com/photo-1580618672591-eb180b1a973f?auto=format&fit=crop&w=2600&q=90"
+        src="https://images.unsplash.com/photo-1580060839134-75a5edca2e99?auto=format&fit=crop&w=2600&q=90"
         unoptimized
       />
 
@@ -340,7 +341,7 @@ function PopularDestinationsSection() {
             <FadeIn className="h-full">
               <div className="group relative isolate flex h-full min-h-[460px] overflow-hidden rounded-3xl bg-muted text-white">
                 <Image
-                  alt={`${featured.name}, ${featured.province}`}
+                  alt={imageAlt(featured.imageDescription, `${featured.name}, ${featured.province}`)}
                   className="-z-10 object-cover transition-transform duration-1000 ease-out group-hover:scale-105"
                   fill
                   priority
@@ -348,8 +349,8 @@ function PopularDestinationsSection() {
                   src={featured.image}
                   unoptimized
                 />
-                <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-                <div className="mt-auto flex flex-col justify-end p-8 sm:p-10">
+                <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+                <div className="relative z-30 mt-auto flex flex-col justify-end p-8 sm:p-10">
                   <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-[#f4cd9f]">
                     <MapPin aria-hidden="true" size={14} />
                     {featured.province}
@@ -454,19 +455,19 @@ function EditorialStorytellingBreak() {
             </div>
           </SlideIn>
 
-          <SlideIn className="relative aspect-[4/3] overflow-hidden rounded-3xl" direction="right">
+          <SlideIn className="relative isolate aspect-[4/3] overflow-hidden rounded-3xl" direction="right">
             <Image
-              alt="Table Mountain and coastal sea cliffs along Chapman's Peak overlooking the Atlantic Ocean"
+              alt="Cape Town harbour with boats moored beneath Table Mountain"
               className="object-cover"
               fill
               sizes="(max-width: 1024px) 100vw, 50vw"
-              src="https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=1400&q=85"
+              src="/images/south-africa/cape-town-harbour.jpg"
               unoptimized
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-            <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between text-xs text-white/90">
-              <span className="font-semibold tracking-wide">Table Mountain Escarpment · Cape Town</span>
-              <span className="italic">Captured with Guide Thandi</span>
+            <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <div className="absolute bottom-6 left-6 right-6 z-30 flex items-center justify-between text-xs text-white/90">
+              <span className="font-semibold tracking-wide">Cape Town Harbour · Western Cape</span>
+              <span className="italic">Table Mountain in view</span>
             </div>
           </SlideIn>
         </div>

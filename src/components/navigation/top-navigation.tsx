@@ -33,7 +33,7 @@ function Brand({ isTransparent }: { isTransparent: boolean }) {
           isTransparent ? "text-white" : "text-foreground",
         )}
       >
-        Nomsa Tour Guide
+        Nomsa Tour Guides
       </span>
     </Link>
   );
@@ -148,7 +148,7 @@ export function TopNavigation() {
               <div className="flex items-center justify-between pb-4 border-b border-border">
                 <DrawerTitle className="flex items-center gap-3 font-display text-2xl font-bold">
                   <BrandMark className="size-12 rounded-full object-cover" />
-                  Nomsa Tour Guide
+                  Nomsa Tour Guides
                 </DrawerTitle>
               </div>
 

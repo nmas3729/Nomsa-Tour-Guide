@@ -158,11 +158,11 @@ export function ExperienceDetail({ data }: { data: ExperienceDetailData }) {
       {/* Hero Image Gallery */}
       <section className="pb-10">
         <Container>
-          <div className="grid gap-3 lg:grid-cols-12">
+          <div className="relative grid gap-3 lg:grid-cols-12">
             {/* Primary Large Image */}
             <button
               aria-label={`View photo ${activeImageIndex + 1} of ${data.images.length}: ${data.images[activeImageIndex]?.caption || data.title}`}
-              className="group relative aspect-[16/10] overflow-hidden rounded-3xl border-0 bg-muted p-0 text-left shadow-xl shadow-black/10 ring-1 ring-border/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 lg:col-span-8"
+              className="group relative isolate aspect-[16/10] overflow-hidden rounded-3xl border-0 bg-muted p-0 text-left shadow-xl shadow-black/10 ring-1 ring-border/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 lg:col-span-8"
               onClick={() => setModalOpen(true)}
               type="button"
             >
@@ -175,13 +175,13 @@ export function ExperienceDetail({ data }: { data: ExperienceDetailData }) {
                 src={data.images[activeImageIndex]?.url || data.images[0].url}
                 unoptimized
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-100 transition-opacity duration-300 sm:opacity-0 sm:group-hover:opacity-100 motion-reduce:transition-none" />
-              <span className="absolute bottom-5 left-5 max-w-[55%] text-left text-xs font-medium leading-relaxed text-white drop-shadow sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 motion-reduce:transition-none">
+              <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-100 transition-opacity duration-300 sm:opacity-0 sm:group-hover:opacity-100 motion-reduce:transition-none" />
+              <span className="absolute bottom-5 left-5 z-30 max-w-[55%] text-left text-xs font-medium leading-relaxed text-white drop-shadow sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 motion-reduce:transition-none">
                 {data.images[activeImageIndex]?.caption}
               </span>
               <span
                 aria-hidden="true"
-                className="absolute bottom-5 right-5 rounded-full bg-black/60 px-4 py-2 text-xs font-semibold text-white backdrop-blur-md transition-all group-hover:bg-black/80"
+                className="absolute bottom-5 right-5 z-30 rounded-full bg-black/60 px-4 py-2 text-xs font-semibold text-white backdrop-blur-md transition-all group-hover:bg-black/80"
               >
                 View Full Gallery ({data.images.length})
               </span>
@@ -193,7 +193,7 @@ export function ExperienceDetail({ data }: { data: ExperienceDetailData }) {
                 <button
                   aria-label={`Show photo ${idx + 1}: ${img.caption}`}
                   aria-pressed={activeImageIndex === idx}
-                  className={`group relative aspect-[16/10] overflow-hidden rounded-2xl bg-muted p-0 text-left border-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all ${
+                  className={`group relative isolate aspect-[16/10] overflow-hidden rounded-2xl bg-muted p-0 text-left border-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all ${
                     activeImageIndex === idx ? "border-primary" : "border-transparent opacity-80 hover:opacity-100"
                   }`}
                   key={img.url}
@@ -515,7 +515,7 @@ export function ExperienceDetail({ data }: { data: ExperienceDetailData }) {
                       <div>
                         <div className="flex items-center gap-3">
                           <Avatar className="size-10 border border-border">
-                            <AvatarImage alt={rev.name} src={rev.avatar} />
+                            {rev.avatar ? <AvatarImage alt={rev.name} src={rev.avatar} /> : null}
                             <AvatarFallback>{rev.name[0]}</AvatarFallback>
                           </Avatar>
                           <div>
@@ -674,7 +674,7 @@ export function ExperienceDetail({ data }: { data: ExperienceDetailData }) {
           >
             <X size={20} />
           </button>
-          <div className="relative aspect-[16/10] max-h-[85vh] w-full max-w-5xl overflow-hidden rounded-3xl">
+          <div className="relative isolate aspect-[16/10] max-h-[85vh] w-full max-w-5xl overflow-hidden rounded-3xl">
             <Image
               alt={data.images[activeImageIndex]?.caption || data.title}
               className="object-contain"

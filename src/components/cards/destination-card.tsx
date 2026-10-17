@@ -1,11 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, MapPin } from "lucide-react";
+import { imageAlt } from "@/src/lib/image";
 
 export function DestinationCard({
   name,
   province,
   image,
+  imageDescription,
   experiencesCount,
   description,
   href,
@@ -13,6 +15,7 @@ export function DestinationCard({
   name: string;
   province: string;
   image: string;
+  imageDescription?: string;
   experiencesCount?: number;
   description?: string;
   href?: string | null;
@@ -23,7 +26,7 @@ export function DestinationCard({
   const content = (
     <>
       <Image
-        alt={`${name}, ${province}`}
+        alt={imageAlt(imageDescription, `${name}, ${province}`)}
         className="-z-10 object-cover transition-transform duration-1000 ease-out group-hover:scale-105"
         fill
         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -33,10 +36,10 @@ export function DestinationCard({
       {/* Cinematic Dual Gradient */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 bg-gradient-to-t from-black/85 via-black/25 to-transparent transition-opacity duration-500 group-hover:from-black/90"
+        className="absolute inset-0 z-20 bg-gradient-to-t from-black/85 via-black/25 to-transparent transition-opacity duration-500 group-hover:from-black/90"
       />
 
-      <div className="flex flex-col p-6 sm:p-7">
+      <div className="relative z-30 flex flex-col p-6 sm:p-7">
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#f4cd9f]">
             <MapPin aria-hidden="true" size={12} />

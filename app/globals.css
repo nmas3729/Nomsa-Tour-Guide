@@ -152,6 +152,18 @@
   box-sizing: border-box;
 }
 
+img[data-nimg="fill"]:not(.avatar-image) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+}
+
+.home-hero img[data-nimg="fill"] {
+  z-index: calc(30 * -1);
+}
+
 html {
   min-height: 100%;
   overflow-x: clip;
@@ -272,6 +284,132 @@ body {
 .glass-panel--subtle {
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
+}
+
+.booking-confirmation-section {
+  position: relative;
+}
+
+.booking-confirmation-panel {
+  background:
+    radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 30rem),
+    color-mix(in srgb, var(--card) 94%, transparent);
+  box-shadow:
+    inset 0 1px color-mix(in srgb, var(--foreground) 5%, transparent),
+    0 24px 70px color-mix(in srgb, var(--foreground) 9%, transparent);
+}
+
+.booking-confirmation-header {
+  background:
+    radial-gradient(ellipse at 50% -25%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 34rem),
+    linear-gradient(180deg, color-mix(in srgb, var(--secondary) 32%, transparent), transparent);
+}
+
+.booking-confirmation-summary {
+  box-shadow: inset 0 1px color-mix(in srgb, var(--foreground) 5%, transparent);
+}
+
+.booking-confirmation-note {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--foreground) 2%, transparent), transparent 60%),
+    color-mix(in srgb, var(--secondary) 48%, var(--card));
+}
+
+.contact-map-grid {
+  background-image:
+    linear-gradient(45deg, transparent 48%, rgb(128 148 129 / 18%) 49%, rgb(128 148 129 / 18%) 51%, transparent 52%),
+    linear-gradient(-45deg, transparent 48%, rgb(128 148 129 / 18%) 49%, rgb(128 148 129 / 18%) 51%, transparent 52%);
+  background-size: 36px 36px;
+}
+
+.experience-map-grid {
+  background-image:
+    linear-gradient(45deg, transparent 48%, rgb(31 94 74 / 20%) 49%, rgb(31 94 74 / 20%) 51%, transparent 52%),
+    linear-gradient(-45deg, transparent 48%, rgb(31 94 74 / 20%) 49%, rgb(31 94 74 / 20%) 51%, transparent 52%);
+  background-size: 40px 40px;
+}
+
+.dashboard-account {
+  position: relative;
+}
+
+.dashboard-account > header {
+  position: relative;
+  isolation: isolate;
+}
+
+.dashboard-account > header::before {
+  position: absolute;
+  z-index: -1;
+  inset: -2.5rem -1.5rem -1.5rem;
+  content: "";
+  background: radial-gradient(ellipse at 12% 12%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 34rem);
+  pointer-events: none;
+}
+
+.dashboard-metric {
+  position: relative;
+  overflow: hidden;
+  background-color: color-mix(in srgb, var(--card) 92%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.dashboard-metric::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), transparent 70%);
+  opacity: 0.7;
+}
+
+.dashboard-panel,
+.dashboard-empty,
+.booking-history-card {
+  background-image:
+    linear-gradient(145deg, color-mix(in srgb, white 3.5%, transparent), transparent 46%),
+    linear-gradient(var(--card), var(--card));
+}
+
+.dashboard-panel,
+.dashboard-empty {
+  border-color: color-mix(in srgb, var(--border) 82%, white 5%);
+  box-shadow:
+    inset 0 1px color-mix(in srgb, white 5%, transparent),
+    0 14px 38px color-mix(in srgb, var(--foreground) 5%, transparent);
+}
+
+.booking-history-card {
+  position: relative;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--border) 86%, transparent);
+  box-shadow:
+    inset 0 1px color-mix(in srgb, white 5%, transparent),
+    0 12px 34px color-mix(in srgb, var(--foreground) 5%, transparent);
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.75, 0.25, 1),
+    border-color 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.booking-history-card::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  content: "";
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 62%, transparent), transparent 72%);
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.booking-history-card:hover,
+.booking-history-card:focus-within {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--border));
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.07),
+    0 18px 42px rgba(0, 0, 0, 0.1);
 }
 
 .premium-button:not(:disabled) {
@@ -1078,14 +1216,17 @@ select:focus-visible {
 
   .premium-card,
   .premium-button,
-  .glass-panel {
+  .glass-panel,
+  .booking-history-card {
     transition: none;
   }
 
   .premium-card:hover,
   .premium-card:focus-within,
   .premium-button:not(:disabled):hover,
-  .premium-button:not(:disabled):active {
+  .premium-button:not(:disabled):active,
+  .booking-history-card:hover,
+  .booking-history-card:focus-within {
     transform: none;
   }
 
@@ -1128,6 +1269,18 @@ select:focus-visible {
 
   .guide-profile-card:hover,
   .guide-profile-card:focus-within {
+    transform: none;
+  }
+
+  .booking-history-card,
+  .dashboard-panel,
+  .dashboard-metric,
+  .dashboard-empty {
+    transition: none;
+  }
+
+  .booking-history-card:hover,
+  .booking-history-card:focus-within {
     transform: none;
   }
 

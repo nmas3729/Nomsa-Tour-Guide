@@ -14,9 +14,23 @@ const bookingSummary = {
   id: true,
   experienceDate: true,
   status: true,
+  paymentStatus: true,
   totalPrice: true,
   currency: true,
-  experience: { select: { title: true, slug: true } },
+  travellerCount: true,
+  experience: {
+    select: {
+      title: true,
+      slug: true,
+      meetingPoint: true,
+      destination: {
+        select: {
+          name: true,
+          city: { select: { province: { select: { name: true } } } },
+        },
+      },
+    },
+  },
 } as const;
 
 export async function getDashboardData(user: AuthenticatedPrincipal) {
@@ -27,6 +41,8 @@ export async function getDashboardData(user: AuthenticatedPrincipal) {
     const [
       upcomingBookings,
       completedBookings,
+      attentionBookings,
+      historyBookings,
       wishlist,
       savedExperienceCount,
       unreadNotifications,
@@ -49,6 +65,32 @@ export async function getDashboardData(user: AuthenticatedPrincipal) {
           select: bookingSummary,
           orderBy: { experienceDate: "desc" },
           take: 5,
+        }),
+        prisma.booking.findMany({
+          where: {
+            customerId: user.id,
+            OR: [
+              { status: BookingStatus.PENDING },
+              { status: BookingStatus.AWAITING_PAYMENT },
+              { status: BookingStatus.CANCELLED },
+              { status: BookingStatus.REFUND_REQUESTED },
+              { status: BookingStatus.REFUNDED },
+              { paymentStatus: PaymentStatus.PENDING },
+              { paymentStatus: PaymentStatus.PROCESSING },
+              { paymentStatus: PaymentStatus.FAILED },
+              { paymentStatus: PaymentStatus.REFUND_PENDING },
+              { paymentStatus: PaymentStatus.REFUNDED },
+            ],
+          },
+          select: bookingSummary,
+          orderBy: { experienceDate: "desc" },
+          take: 8,
+        }),
+        prisma.booking.findMany({
+          where: { customerId: user.id },
+          select: bookingSummary,
+          orderBy: { experienceDate: "desc" },
+          take: 8,
         }),
         prisma.wishlist.findMany({
           where: { customerId: user.id, experience: { deletedAt: null } },
@@ -89,6 +131,8 @@ export async function getDashboardData(user: AuthenticatedPrincipal) {
       role: UserRole.CUSTOMER,
       upcomingBookings,
       completedBookings,
+      attentionBookings,
+      historyBookings,
       wishlist: wishlist.map(({ experience }) => experience),
       savedExperienceCount,
       unreadNotifications,
@@ -110,6 +154,9 @@ export async function getDashboardData(user: AuthenticatedPrincipal) {
     const [
       upcomingBookings,
       upcomingBookingCount,
+      attentionBookings,
+      completedBookings,
+      cancelledBookings,
       availabilityCount,
       paidPayouts,
       payouts,
@@ -131,6 +178,38 @@ export async function getDashboardData(user: AuthenticatedPrincipal) {
           experienceDate: { gte: now },
           status: { in: [BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN] },
         },
+      }),
+      prisma.booking.findMany({
+        where: {
+          guideId: profile.id,
+          status: { not: BookingStatus.CANCELLED },
+          OR: [
+            { status: BookingStatus.PENDING },
+            { status: BookingStatus.AWAITING_PAYMENT },
+            { status: BookingStatus.REFUND_REQUESTED },
+            { status: BookingStatus.REFUNDED },
+            { paymentStatus: PaymentStatus.PENDING },
+            { paymentStatus: PaymentStatus.PROCESSING },
+            { paymentStatus: PaymentStatus.FAILED },
+            { paymentStatus: PaymentStatus.REFUND_PENDING },
+            { paymentStatus: PaymentStatus.REFUNDED },
+          ],
+        },
+        select: bookingSummary,
+        orderBy: { experienceDate: "desc" },
+        take: 8,
+      }),
+      prisma.booking.findMany({
+        where: { guideId: profile.id, status: BookingStatus.COMPLETED },
+        select: bookingSummary,
+        orderBy: { experienceDate: "desc" },
+        take: 8,
+      }),
+      prisma.booking.findMany({
+        where: { guideId: profile.id, status: BookingStatus.CANCELLED },
+        select: bookingSummary,
+        orderBy: { experienceDate: "desc" },
+        take: 8,
       }),
       prisma.availability.count({
         where: {
@@ -167,6 +246,9 @@ export async function getDashboardData(user: AuthenticatedPrincipal) {
       verificationStatus: profile.verificationStatus,
       upcomingBookings,
       upcomingBookingCount,
+      attentionBookings,
+      completedBookings,
+      cancelledBookings,
       availabilityCount,
       paidPayouts: Number(paidPayouts._sum.amount ?? 0),
       payouts,

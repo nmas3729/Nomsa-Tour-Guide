@@ -20,7 +20,7 @@ export function AuthShell({
       <div className="auth-card">
         <Link className="auth-brand" href="/" aria-label="Nomsa Tour Guides home">
           <BrandMark className="size-14 rounded-full object-cover" />
-          <span>Nomsa Tour Guide</span>
+          <span>Nomsa Tour Guides</span>
         </Link>
         <div className="auth-heading">
           <p className="auth-eyebrow">{eyebrow}</p>

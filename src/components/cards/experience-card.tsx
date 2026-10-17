@@ -40,7 +40,7 @@ export function ExperienceCard({
   const cardContent = (
     <>
       {/* Photography & Overlays */}
-      <div className="experience-card-image-wrap relative aspect-[4/3] w-full overflow-hidden bg-muted">
+      <div className="experience-card-image-wrap relative isolate aspect-[4/3] w-full overflow-hidden bg-muted">
         <Image
           alt={imageAlt(imageDescription)}
           className="experience-card-image object-cover transition-transform duration-700 ease-out group-hover:scale-105 motion-reduce:transform-none motion-reduce:transition-none"
@@ -49,11 +49,11 @@ export function ExperienceCard({
           src={image}
           unoptimized
         />
-        <div aria-hidden="true" className="experience-card-image-shade absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-70 transition-opacity duration-500 group-hover:opacity-55 motion-reduce:transition-none" />
+        <div aria-hidden="true" className="experience-card-image-shade absolute inset-0 z-20 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-70 transition-opacity duration-500 group-hover:opacity-55 motion-reduce:transition-none" />
 
         {/* Category Pill */}
         {category ? (
-          <span className="experience-card-category absolute left-4 top-4 inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider shadow-sm backdrop-blur-md">
+          <span className="experience-card-category absolute left-4 top-4 z-30 inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wider shadow-sm backdrop-blur-md">
             {category}
           </span>
         ) : null}
@@ -61,7 +61,7 @@ export function ExperienceCard({
         {/* Wishlist Button */}
         <button
           aria-label="Save to wishlist"
-          className="experience-card-wishlist absolute right-4 top-4 grid size-10 place-items-center rounded-full shadow-md backdrop-blur-md transition-all duration-300 hover:scale-110 active:scale-95 motion-reduce:transform-none motion-reduce:transition-none"
+          className="experience-card-wishlist absolute right-4 top-4 z-30 grid size-10 place-items-center rounded-full shadow-md backdrop-blur-md transition-all duration-300 hover:scale-110 active:scale-95 motion-reduce:transform-none motion-reduce:transition-none"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -72,7 +72,7 @@ export function ExperienceCard({
         </button>
 
         {/* Destination Pill on image bottom */}
-        <div className="experience-card-destination absolute bottom-3 left-3 flex max-w-[calc(100%-1.5rem)] items-start gap-2 rounded-2xl px-3 py-2 text-xs font-medium text-white backdrop-blur-md sm:bottom-4 sm:left-4">
+        <div className="experience-card-destination absolute bottom-3 left-3 z-30 flex max-w-[calc(100%-1.5rem)] items-start gap-2 rounded-2xl px-3 py-2 text-xs font-medium text-white backdrop-blur-md sm:bottom-4 sm:left-4">
           <MapPin aria-hidden="true" className="mt-0.5 shrink-0" size={13} />
           <span className="min-w-0">
             <span className="block truncate font-semibold">{destination}</span>
@@ -134,7 +134,7 @@ export function ExperienceCard({
   );
 
   return (
-    <article className="experience-card group flex h-full flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_16px_40px_rgba(0,0,0,0.08)] motion-reduce:transform-none motion-reduce:transition-none">
+    <article className="experience-card group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_16px_40px_rgba(0,0,0,0.08)] motion-reduce:transform-none motion-reduce:transition-none">
       {href ? (
         <Link className="flex h-full flex-col text-inherit no-underline" href={href}>
           {cardContent}

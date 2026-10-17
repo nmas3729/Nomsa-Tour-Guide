@@ -17,7 +17,7 @@ export function Footer() {
           >
             <BrandMark className="size-14 rounded-full object-cover transition-transform duration-300 group-hover:scale-105" />
             <span className="font-display text-2xl font-bold tracking-tight text-foreground">
-              Nomsa Tour Guide
+              Nomsa Tour Guides
             </span>
           </Link>
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">

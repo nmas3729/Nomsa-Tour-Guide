@@ -4,15 +4,28 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
+  AlertCircle,
+  ArrowRight,
+  CalendarDays,
   CheckCircle2,
-  Download,
+  Clock3,
+  CreditCard,
   MapPin,
+  Users,
 } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Container } from "@/src/components/layout/container";
 import { Section } from "@/src/components/layout/section";
-import { formatCurrency } from "@/src/lib/format";
+import { formatCurrency, formatDate } from "@/src/lib/format";
 import type { BookingRecordSummary } from "@/src/server/services/booking-service";
+import {
+  bookingStatusLabel,
+  confirmationMessage,
+  isPaymentRecordedForBooking,
+  paymentStatusLabel,
+  refundStateForBooking,
+  refundStatusCopy,
+} from "@/src/components/booking/booking-confirmation-state";
 
 export function BookingConfirmationView() {
   const searchParams = useSearchParams();
@@ -21,7 +34,6 @@ export function BookingConfirmationView() {
   const [booking, setBooking] = useState<BookingRecordSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [downloadToast, setDownloadToast] = useState(false);
 
   useEffect(() => {
     async function loadBooking() {
@@ -35,8 +47,10 @@ export function BookingConfirmationView() {
         if (res.ok) {
           const data = await res.json();
           setBooking(data.booking);
+        } else if (res.status === 404) {
+          setLoadError("This booking could not be found or is no longer available.");
         } else {
-          setLoadError("We couldn't verify this booking. Check the booking link or contact support.");
+          setLoadError("Booking details are temporarily unavailable. Please try again shortly.");
         }
       } catch {
         setLoadError("Booking details are temporarily unavailable. Please try again shortly.");
@@ -48,20 +62,16 @@ export function BookingConfirmationView() {
     loadBooking();
   }, [bookingId]);
 
-  function handleDownloadPDF() {
-    setDownloadToast(true);
-    setTimeout(() => setDownloadToast(false), 3000);
-  }
-
   if (loading) {
     return (
-      <Section className="py-16 sm:py-24">
+      <Section className="booking-confirmation-section py-12 sm:py-20">
         <Container className="max-w-3xl">
-          <div className="glass-panel glass-panel--floating flex min-h-[360px] flex-col items-center justify-center rounded-3xl border border-border/70 bg-card p-8 text-center shadow-lg">
-            <div className="size-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            <p className="mt-4 text-sm font-medium text-muted-foreground">
-              Verifying your PayFast transaction...
-            </p>
+          <div aria-live="polite" className="booking-confirmation-panel glass-panel glass-panel--floating flex min-h-72 flex-col items-center justify-center rounded-[2rem] p-8 text-center">
+            <span className="grid size-14 place-items-center rounded-full bg-primary/10 text-primary">
+              <Clock3 aria-hidden="true" className="size-6" />
+            </span>
+            <p className="mt-5 font-display text-xl font-semibold">Checking your booking</p>
+            <p className="mt-2 text-sm text-muted-foreground">Loading the latest booking and payment status.</p>
           </div>
         </Container>
       </Section>
@@ -70,123 +80,196 @@ export function BookingConfirmationView() {
 
   if (!booking) {
     return (
-      <Section className="py-16 sm:py-24">
+      <Section className="booking-confirmation-section py-12 sm:py-20">
         <Container className="max-w-3xl">
-          <div className="glass-panel glass-panel--floating rounded-3xl border border-border/70 bg-card p-8 text-center shadow-xl sm:p-14">
-            <h1 className="font-display text-3xl font-medium tracking-tight">Booking not available</h1>
-            <p className="mt-3 text-sm text-muted-foreground">
-              {loadError || "A booking reference is required to view booking details."}
+          <div className="booking-confirmation-panel glass-panel glass-panel--floating rounded-[2rem] p-7 text-center sm:p-12">
+            <span className="mx-auto grid size-14 place-items-center rounded-full bg-secondary text-muted-foreground">
+              <AlertCircle aria-hidden="true" className="size-6" />
+            </span>
+            <p className="mt-5 text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Booking details</p>
+            <h1 className="mt-2 font-display text-3xl font-medium tracking-tight sm:text-4xl">Booking not available</h1>
+            <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
+              {loadError || "No booking reference was provided, so booking details cannot be displayed."}
             </p>
-            <Button asChild className="mt-6">
-              <Link href="/experiences">Browse experiences</Link>
-            </Button>
+            <div className="mt-7 flex flex-wrap justify-center gap-3">
+              <Button asChild>
+                <Link href="/experiences">Browse experiences</Link>
+              </Button>
+              {loadError ? (
+                <Button asChild variant="outline">
+                  <Link href="/contact">Contact Nomsa</Link>
+                </Button>
+              ) : null}
+            </div>
           </div>
         </Container>
       </Section>
     );
   }
 
-  const paymentSucceeded = booking.paymentStatus === "SUCCEEDED";
+  const message = confirmationMessage(booking);
+  const paymentRecordedForBooking = isPaymentRecordedForBooking(booking);
+  const refundState = refundStateForBooking(booking);
+  const refundCopy = refundStatusCopy(refundState);
+  const showRefundSection = refundState !== "none";
+  const StatusIcon = message.tone === "success" ? CheckCircle2 : message.tone === "pending" ? Clock3 : AlertCircle;
+  const destination = booking.destination.trim();
+  const experienceHref = `/experiences/${booking.experienceSlug}`;
 
   return (
-    <Section className="py-16 sm:py-24">
-      <Container className="max-w-3xl">
-        <div className="glass-panel glass-panel--floating rounded-3xl border border-border/70 bg-card p-8 text-center shadow-xl sm:p-14">
-          {/* Animated Celebration Badge */}
-          {paymentSucceeded ? (
-            <div className="mx-auto grid size-20 place-items-center rounded-full bg-primary/10 text-primary ring-8 ring-primary/5">
-              <CheckCircle2 size={44} strokeWidth={2.2} />
-            </div>
-          ) : null}
-
-          <span className="mt-6 inline-block rounded-full bg-accent/15 px-4 py-1 text-xs font-bold uppercase tracking-[0.2em] text-accent">
-            {paymentSucceeded ? "PayFast Payment Verified" : `Payment ${booking.paymentStatus.toLowerCase()}`}
-          </span>
-
-          <h1 className="mt-4 font-display text-3xl font-medium tracking-tight sm:text-4xl lg:text-5xl">
-            {paymentSucceeded ? "You're booked for South Africa!" : "Your booking is not yet confirmed"}
-          </h1>
-
-          <p className="mx-auto mt-3 max-w-lg text-base text-muted-foreground">
-            {paymentSucceeded
-              ? "Your PayFast payment has been verified."
-              : "We have not verified a completed PayFast payment for this booking."}
-          </p>
-
-          {/* Booking Reference Card */}
-          <div className="mx-auto mt-8 max-w-lg rounded-2xl border border-border/80 bg-secondary/40 p-6 text-left">
-            <div className="flex items-center justify-between border-b border-border/60 pb-3.5 text-xs">
-              <span className="text-muted-foreground uppercase font-bold tracking-wider">Booking Reference</span>
-              <span className="font-mono font-bold text-primary text-sm">{booking.reference}</span>
-            </div>
-
-            <div className="mt-4 space-y-2 text-xs">
-              <p className="text-sm font-semibold text-foreground">{booking.experienceTitle}</p>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <MapPin size={12} className="text-primary" />
-                <span>{booking.destination}</span>
-              </div>
-              <div className="flex items-center gap-4 text-muted-foreground pt-1">
-                <span>Date: <strong className="text-foreground">{booking.date}</strong></span>
-                <span>Guests: <strong className="text-foreground">{booking.travellerCount} travellers</strong></span>
-              </div>
-              <div className="flex items-center justify-between border-t border-border/50 pt-3">
-                <span className="text-muted-foreground">Host: <strong className="text-foreground">{booking.guideName}</strong></span>
-                <span className="font-display font-bold text-base text-primary">
-                  {formatCurrency(booking.totalPrice)} {paymentSucceeded ? "(Paid)" : "(Not paid)"}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Next Steps */}
-          {paymentSucceeded ? (
-            <div className="mt-10 border-t border-border/70 pt-8 text-left">
-              <h2 className="font-display text-lg font-semibold text-foreground">What happens now?</h2>
-              <ol className="mt-4 space-y-4 text-xs text-muted-foreground">
-                <li className="flex items-start gap-3">
-                  <span className="grid size-6 shrink-0 place-items-center rounded-full bg-primary text-white font-bold text-[11px]">1</span>
-                  <div>
-                    <strong className="text-foreground block">Email Confirmation & Tax Invoice</strong>
-                    <span>A copy of your VAT receipt and travel voucher has been dispatched to your email.</span>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="grid size-6 shrink-0 place-items-center rounded-full bg-primary text-white font-bold text-[11px]">2</span>
-                  <div>
-                    <strong className="text-foreground block">Experience details</strong>
-                    <span>Review the meeting point and other details on the experience page before you set out.</span>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="grid size-6 shrink-0 place-items-center rounded-full bg-primary text-white font-bold text-[11px]">3</span>
-                  <div>
-                    <strong className="text-foreground block">Changes and cancellations</strong>
-                    <span>Contact our team with your booking reference to ask about changes or cancellation terms.</span>
-                  </div>
-                </li>
-              </ol>
-            </div>
-          ) : null}
-
-          {/* Action CTAs */}
-          <div className="mt-10 flex flex-wrap justify-center gap-4">
-            {paymentSucceeded ? (
-              <Button className="gap-2" onClick={handleDownloadPDF} variant="outline">
-                <Download size={16} />
-                <span>Download Itinerary (PDF)</span>
-              </Button>
-            ) : null}
-            <Button asChild className="bg-accent text-white hover:bg-accent/90">
-              <Link href="/experiences">Browse More Experiences</Link>
-            </Button>
-          </div>
-
-          {paymentSucceeded && downloadToast ? (
-            <p aria-live="polite" className="mt-3 text-xs font-semibold text-primary">
-              Itinerary PDF generated and downloaded successfully!
+    <Section className="booking-confirmation-section py-10 sm:py-16">
+      <Container className="max-w-4xl">
+        <div className="booking-confirmation-panel glass-panel glass-panel--floating overflow-hidden rounded-[2rem]">
+          <header className="booking-confirmation-header px-6 py-8 text-center sm:px-12 sm:py-12">
+            <span
+              className={`mx-auto grid size-16 place-items-center rounded-full ${
+                message.tone === "success"
+                  ? "bg-primary/10 text-primary"
+                  : message.tone === "pending"
+                    ? "bg-accent/15 text-highlight"
+                    : "bg-destructive/10 text-destructive"
+              }`}
+            >
+              <StatusIcon aria-hidden="true" className="size-8" />
+            </span>
+            <p className="mt-5 text-xs font-bold uppercase tracking-[0.2em] text-primary">
+              {bookingStatusLabel(booking.status)}
             </p>
-          ) : null}
+            <h1 className="mx-auto mt-2 max-w-2xl font-display text-3xl font-medium tracking-tight sm:text-4xl lg:text-5xl">
+              {message.title}
+            </h1>
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+              {message.description}
+            </p>
+          </header>
+
+          <div className="px-5 pb-6 sm:px-10 sm:pb-10">
+            <div className="booking-confirmation-summary rounded-3xl border border-border/60 bg-card/75 p-5 sm:p-7">
+              <div className="flex flex-col gap-3 border-b border-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Booking reference</p>
+                  <p className="mt-1 break-all font-mono text-sm font-bold tracking-wide text-primary sm:text-base">
+                    {booking.reference || "Not available"}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <span className="rounded-full bg-secondary px-3 py-1.5 text-xs font-semibold text-foreground">
+                    Booking: {bookingStatusLabel(booking.status)}
+                  </span>
+                  <span className="rounded-full bg-secondary px-3 py-1.5 text-xs font-semibold text-foreground">
+                    Payment: {paymentStatusLabel(booking.paymentStatus)}
+                  </span>
+                  {showRefundSection ? (
+                    <span className="rounded-full bg-secondary px-3 py-1.5 text-xs font-semibold text-foreground">
+                      Refund: {refundCopy.title}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+
+              {showRefundSection ? (
+                <section
+                  aria-label="Refund status"
+                  className="mt-5 rounded-2xl border border-border/60 bg-secondary/40 p-4 sm:p-5"
+                >
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                    Refund status
+                  </p>
+                  <p className="mt-1.5 text-sm font-semibold text-foreground">{refundCopy.title}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{refundCopy.description}</p>
+                </section>
+              ) : null}
+
+              <div className="py-5">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">Your experience</p>
+                <h2 className="mt-2 font-display text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
+                  {booking.experienceTitle || "Experience details not available"}
+                </h2>
+                <p className="mt-2 flex items-start gap-2 text-sm text-muted-foreground">
+                  <MapPin aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />
+                  <span>{destination || "Destination and province not listed"}</span>
+                </p>
+              </div>
+
+              <dl className="grid gap-x-6 gap-y-5 border-t border-border/60 pt-5 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                  <dt className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                    <CalendarDays aria-hidden="true" className="size-3.5 text-primary" />
+                    Date &amp; time
+                  </dt>
+                  <dd className="mt-1.5 text-sm font-semibold text-foreground">
+                    {booking.date ? formatDate(booking.date, { dateStyle: "medium", timeZone: "UTC" }) : "Not listed"}
+                  </dd>
+                  {booking.timeSlot ? <dd className="mt-0.5 text-xs text-muted-foreground">{booking.timeSlot}</dd> : null}
+                </div>
+                <div>
+                  <dt className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                    <Users aria-hidden="true" className="size-3.5 text-primary" />
+                    Travellers
+                  </dt>
+                  <dd className="mt-1.5 text-sm font-semibold text-foreground">
+                    {booking.travellerCount > 0
+                      ? `${booking.travellerCount} ${booking.travellerCount === 1 ? "traveller" : "travellers"}`
+                      : "Not listed"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Host</dt>
+                  <dd className="mt-1.5 text-sm font-semibold text-foreground">{booking.guideName || "Not listed"}</dd>
+                </div>
+                <div>
+                  <dt className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                    <CreditCard aria-hidden="true" className="size-3.5 text-primary" />
+                    Total
+                  </dt>
+                  <dd className="mt-1.5 text-sm font-semibold text-foreground">
+                    {Number.isFinite(booking.totalPrice) ? formatCurrency(booking.totalPrice, booking.currency || "ZAR") : "Not listed"}
+                  </dd>
+                  <dd className="mt-0.5 text-xs text-muted-foreground">
+                    {booking.paymentStatus === "SUCCEEDED" ? "Payment recorded as successful" : paymentStatusLabel(booking.paymentStatus)}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            <div className="mt-6 grid gap-4 lg:grid-cols-2">
+              <section className="booking-confirmation-note rounded-2xl p-5">
+                <h2 className="font-display text-lg font-semibold">What to know next</h2>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {paymentRecordedForBooking
+                    ? "Keep your booking reference for your records. Visit the experience page to review the meeting point and itinerary details listed for this outing."
+                    : booking.paymentStatus === "PENDING" || booking.paymentStatus === "PROCESSING"
+                      ? "The latest recorded payment is still pending. This page reflects the current booking status and does not confirm payment."
+                      : booking.paymentStatus === "REFUND_PENDING" || booking.paymentStatus === "REFUNDED"
+                        ? "The booking and payment statuses above reflect the latest details available here. Contact Nomsa with your reference if you need help understanding this payment update."
+                        : "This booking is not confirmed. Check the current payment status before making another booking."}
+                </p>
+                <p className="mt-3 border-t border-border/50 pt-3 text-xs leading-relaxed text-muted-foreground">
+                  Cancellation terms are not included in the booking details provided here.
+                </p>
+              </section>
+
+              <div className="flex flex-col justify-center gap-3 rounded-2xl bg-secondary/45 p-5">
+                <Button asChild className="min-h-12 justify-between rounded-full">
+                  <Link href={experienceHref}>
+                    View experience details
+                    <ArrowRight aria-hidden="true" className="size-4" />
+                  </Link>
+                </Button>
+                <Button asChild className="min-h-12 rounded-full" variant="outline">
+                  <Link href="/experiences">Explore more South African experiences</Link>
+                </Button>
+                {booking.paymentStatus === "FAILED" || booking.paymentStatus === "CANCELLED" ? (
+                  <Link
+                    className="text-center text-xs font-semibold text-primary underline-offset-4 hover:underline"
+                    href={`/experiences/${booking.experienceSlug}/book`}
+                  >
+                    Return to this experience
+                  </Link>
+                ) : null}
+              </div>
+            </div>
+          </div>
         </div>
       </Container>
     </Section>

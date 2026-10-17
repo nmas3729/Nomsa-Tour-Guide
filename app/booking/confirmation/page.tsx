@@ -5,18 +5,17 @@ import { PublicLayout } from "@/src/components/marketing/public-layout";
 import { publicPageMetadata } from "@/src/lib/seo";
 
 export const metadata: Metadata = publicPageMetadata({
-  title: "Booking Confirmed | Nomsa Tour Guides",
-  description: "Your guided South African experience has been successfully reserved with PayFast.",
+  title: "Booking Details | Nomsa Tour Guides",
+  description: "Review your South African experience booking and current payment status.",
   path: "/booking/confirmation",
 });
 
 export default function BookingConfirmationPage() {
   return (
     <PublicLayout>
-      <Suspense fallback={<div className="min-h-screen grid place-items-center">Loading confirmation...</div>}>
+      <Suspense fallback={<div aria-live="polite" className="min-h-[60vh] grid place-items-center text-sm text-muted-foreground">Loading booking details...</div>}>
         <BookingConfirmationView />
       </Suspense>
     </PublicLayout>
   );
 }
-

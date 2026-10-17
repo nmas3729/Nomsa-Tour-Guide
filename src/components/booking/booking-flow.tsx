@@ -523,9 +523,9 @@ export function BookingFlow({ experience }: { experience: ExperienceDetailData }
                   {/* Summary Box */}
                   <div className="glass-panel glass-panel--subtle rounded-3xl border border-border/70 bg-card p-6 shadow-sm sm:p-7 space-y-6">
                     <div className="flex items-start gap-4 border-b border-border/60 pb-6">
-                      <div className="relative size-20 overflow-hidden rounded-2xl bg-muted shrink-0">
+                      <div className="relative isolate size-20 overflow-hidden rounded-2xl bg-muted shrink-0">
                         <Image
-                          alt={experience.title}
+                          alt={experience.images[0].caption || experience.title}
                           className="object-cover"
                           fill
                           src={experience.images[0].url}
@@ -678,9 +678,9 @@ export function BookingFlow({ experience }: { experience: ExperienceDetailData }
               <div className="glass-panel glass-panel--floating sticky top-28 rounded-3xl border border-border/80 bg-card p-7 shadow-xl shadow-black/5 dark:shadow-none space-y-6">
                 {/* Header Summary */}
                 <div className="flex gap-4 border-b border-border/60 pb-5">
-                  <div className="relative size-16 rounded-2xl overflow-hidden bg-muted shrink-0">
+                  <div className="relative isolate size-16 rounded-2xl overflow-hidden bg-muted shrink-0">
                     <Image
-                      alt={experience.title}
+                      alt={experience.images[0].caption || experience.title}
                       className="object-cover"
                       fill
                       src={experience.images[0].url}

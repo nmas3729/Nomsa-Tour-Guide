@@ -42,7 +42,7 @@ export interface ExperienceDetailData {
     id: string;
     name: string;
     country: string;
-    avatar: string;
+    avatar?: string;
     rating: number;
     date: string;
     comment: string;
@@ -66,24 +66,12 @@ export const detailedExperiences: Record<string, ExperienceDetailData> = {
     languages: ["English", "isiXhosa", "Afrikaans"],
     images: [
       {
-        url: "https://images.unsplash.com/photo-1580060839134-75a5edca2e99?auto=format&fit=crop&w=1600&q=85",
-        caption: "Colourful Bo-Kaap facades beneath the morning glow of Table Mountain",
+        url: "/images/south-africa/cape-town-bo-kaap.jpg",
+        caption: "Bo-Kaap houses with Lion's Head and Table Mountain in the background",
       },
       {
-        url: "https://images.unsplash.com/photo-1596797038530-2c107229654b?auto=format&fit=crop&w=1200&q=85",
-        caption: "Aromatic Cape Malay whole spices at the family-run Atlas Trading spice emporium",
-      },
-      {
-        url: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1200&q=85",
-        caption: "Handmade samosas and cardamom koesisters prepared in a home kitchen",
-      },
-      {
-        url: "https://images.unsplash.com/photo-1580618672591-eb180b1a973f?auto=format&fit=crop&w=1200&q=85",
-        caption: "Panoramic rooftop lookout over the Cape Town city bowl and Signal Hill",
-      },
-      {
-        url: "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&w=1200&q=85",
-        caption: "Cobblestone streets and preserved 18th-century Dutch-Georgian architecture",
+        url: "/images/south-africa/cape-town-harbour.jpg",
+        caption: "Cape Town harbour and Table Mountain",
       },
     ],
     overview:
@@ -161,7 +149,6 @@ export const detailedExperiences: Record<string, ExperienceDetailData> = {
         id: "r1",
         name: "Sophie Laurent",
         country: "France",
-        avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=120&q=80",
         rating: 5,
         date: "September 2026",
         comment:
@@ -172,7 +159,6 @@ export const detailedExperiences: Record<string, ExperienceDetailData> = {
         id: "r2",
         name: "David & Sarah Miller",
         country: "United Kingdom",
-        avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=120&q=80",
         rating: 5,
         date: "August 2026",
         comment:
@@ -183,7 +169,6 @@ export const detailedExperiences: Record<string, ExperienceDetailData> = {
         id: "r3",
         name: "Kwanele Zulu",
         country: "South Africa",
-        avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80",
         rating: 5,
         date: "July 2026",
         comment:
@@ -207,20 +192,16 @@ export const detailedExperiences: Record<string, ExperienceDetailData> = {
     languages: ["English", "siSwati", "Tsonga"],
     images: [
       {
-        url: "https://images.unsplash.com/photo-1551009175-8a68da93d5f9?auto=format&fit=crop&w=1600&q=85",
-        caption: "Elephant matriarch and calf traversing the open savanna at sunrise",
+        url: "/images/south-africa/kruger-elephant.jpg",
+        caption: "African bush elephant in Kruger National Park",
       },
       {
-        url: "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=1200&q=85",
-        caption: "Open 4x4 safari cruiser positioned at a watering hole",
+        url: "/images/south-africa/kapama-game-drive.jpg",
+        caption: "Safari vehicle and guests in Kapama Game Reserve, in the Greater Kruger region",
       },
       {
-        url: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=85",
-        caption: "Male lion resting on warm granite boulders in the early morning light",
-      },
-      {
-        url: "https://images.unsplash.com/photo-1534177616072-ef7dc120449d?auto=format&fit=crop&w=1200&q=85",
-        caption: "African leopard resting quietly in a leadwood tree during morning game drive",
+        url: "/images/south-africa/kruger-giraffe.jpg",
+        caption: "Giraffe near Skukuza in Kruger National Park",
       },
     ],
     overview:
@@ -289,7 +270,6 @@ export const detailedExperiences: Record<string, ExperienceDetailData> = {
         id: "k1",
         name: "Lukas & Greta Weber",
         country: "Germany",
-        avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=120&q=80",
         rating: 5,
         date: "October 2026",
         comment:
