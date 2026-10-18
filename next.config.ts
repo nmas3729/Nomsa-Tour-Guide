@@ -18,6 +18,12 @@ const nextConfig: NextConfig = {
       });
     }
 
+    // Staging/test ground must never be indexed.
+    securityHeaders.push({
+      key: "X-Robots-Tag",
+      value: "noindex, nofollow",
+    });
+
     return [{ source: "/:path*", headers: securityHeaders }];
   },
   experimental: {
