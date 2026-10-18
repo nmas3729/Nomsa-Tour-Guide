@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { requireGuideApplicationEmailEnvironment } from "@/src/config/env";
+import { GuideApplicationStatus } from "@/src/server/db/generated/enums";
 import { sendGuideApplicationReviewEmail } from "./guide-application-email";
 
 const { sendMock } = vi.hoisted(() => ({ sendMock: vi.fn() }));
@@ -17,21 +18,12 @@ vi.mock("resend", () => ({
 const guideEnvironmentMock = vi.mocked(requireGuideApplicationEmailEnvironment);
 
 const application = {
-  role: "GUIDE" as const,
   name: "Nomsa Applicant",
   email: "nomsa@example.com",
-  password: "Not included in the email",
-  confirmPassword: "Not included in the email",
   phone: "+27 66 123 4567",
-  biography: "I have guided visitors through my home region for many years.",
-  yearsExperience: 8,
-  emergencyContactName: "Emergency Person",
-  emergencyContactPhone: "+27 82 123 4567",
-  businessName: "Local Journeys",
-  businessRegistration: "REG-123",
-  specialties: "Heritage, food",
-  languages: "English, isiXhosa",
-  operatingAreas: "Cape Town",
+  applicationId: "application-id",
+  serviceTitle: "Bo-Kaap heritage walk",
+  status: GuideApplicationStatus.SUBMITTED,
 };
 
 describe("guide application review email", () => {
@@ -53,14 +45,12 @@ describe("guide application review email", () => {
       to: "guides@nomsatourguides.co.za",
       replyTo: "nomsa@example.com",
       subject: "Guide application for review: Nomsa Applicant",
-      text: expect.stringContaining("Application status: PENDING"),
+      text: expect.stringContaining("Application status: SUBMITTED"),
     });
     const emailText = sendMock.mock.calls[0][0].text as string;
-    expect(emailText).toContain("Biography:");
-    expect(emailText).toContain(application.biography);
-    expect(emailText).not.toContain(application.password);
-    expect(emailText).not.toContain(application.emergencyContactPhone);
-    expect(emailText).toContain("Review and any approval or publication decision must be made manually.");
+    expect(emailText).toContain(application.serviceTitle);
+    expect(emailText).toContain("protected documents in the admin dashboard");
+    expect(emailText).not.toContain("applicationId");
   });
 
   it("surfaces provider delivery failures to the caller", async () => {

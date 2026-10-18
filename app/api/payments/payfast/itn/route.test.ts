@@ -43,7 +43,7 @@ describe("POST /api/payments/payfast/itn", () => {
     expect(sendInvoiceMock).toHaveBeenCalledWith("NOM-1");
   });
 
-  it("acknowledges a late-payment refund transition without sending an invoice", async () => {
+  it("sends a receipt for a late captured payment that is pending refund", async () => {
     const result = { success: true, duplicate: false, latePayment: true } as const;
     processITNMock.mockResolvedValue(result);
     sendInvoiceMock.mockResolvedValue(undefined);
@@ -52,10 +52,10 @@ describe("POST /api/payments/payfast/itn", () => {
 
     expect(response.status).toBe(200);
     expect(await response.text()).toBe("OK");
-    expect(sendInvoiceMock).not.toHaveBeenCalled();
+    expect(sendInvoiceMock).toHaveBeenCalledWith("NOM-LATE");
   });
 
-  it("checks invoice delivery again on duplicate completion notifications", async () => {
+  it("checks receipt delivery again on duplicate completion notifications", async () => {
     processITNMock.mockResolvedValue({ success: true, duplicate: true });
     sendInvoiceMock.mockResolvedValue(undefined);
 
@@ -65,7 +65,7 @@ describe("POST /api/payments/payfast/itn", () => {
     expect(sendInvoiceMock).toHaveBeenCalledWith("NOM-REFUND");
   });
 
-  it("does not send invoice email for failed payments", async () => {
+  it("does not send a receipt for failed payments", async () => {
     processITNMock.mockResolvedValue({ success: true, duplicate: false });
     sendInvoiceMock.mockResolvedValue(undefined);
 
@@ -75,7 +75,7 @@ describe("POST /api/payments/payfast/itn", () => {
     expect(sendInvoiceMock).not.toHaveBeenCalled();
   });
 
-  it("still acknowledges an approved payment if invoice delivery fails", async () => {
+  it("still acknowledges an approved payment if receipt delivery fails", async () => {
     processITNMock.mockResolvedValue({ success: true, duplicate: false });
     sendInvoiceMock.mockRejectedValue(new Error("Resend unavailable"));
 

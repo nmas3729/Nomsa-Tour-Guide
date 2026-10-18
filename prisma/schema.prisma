@@ -15,8 +15,11 @@ enum UserRole {
 }
 
 enum GuideApplicationStatus {
+  DRAFT
   PENDING
+  SUBMITTED
   UNDER_REVIEW
+  CHANGES_REQUESTED
   APPROVED
   REJECTED
   SUSPENDED
@@ -45,10 +48,17 @@ enum PaymentStatus {
   PENDING
   PROCESSING
   SUCCEEDED
+  PARTIALLY_REFUNDED
+  DISPUTED
   FAILED
   CANCELLED
   REFUND_PENDING
   REFUNDED
+}
+
+enum BookingType {
+  INSTANT
+  REQUEST_TO_BOOK
 }
 
 enum PayoutStatus {
@@ -87,6 +97,8 @@ enum NotificationType {
 
 enum GuideDocumentType {
   GOVERNMENT_ID
+  GUIDE_REGISTRATION
+  PERMIT
   BUSINESS_REGISTRATION
   TAX_CERTIFICATE
   PROFILE_PHOTO
@@ -104,22 +116,22 @@ enum AuthTokenType {
 }
 
 model User {
-  id             String    @id @default(uuid()) @db.Uuid
-  name           String
-  email          String    @unique
-  passwordHash   String
-  phone          String?
-  image          String?   @map("avatar")
-  role           UserRole  @default(CUSTOMER)
-  emailVerified  DateTime? @db.Timestamptz(3)
-  isActive       Boolean   @default(true)
+  id                  String    @id @default(uuid()) @db.Uuid
+  name                String
+  email               String    @unique
+  passwordHash        String
+  phone               String?
+  image               String?   @map("avatar")
+  role                UserRole  @default(CUSTOMER)
+  emailVerified       DateTime? @db.Timestamptz(3)
+  isActive            Boolean   @default(true)
   totpSecretEncrypted String?
-  totpEnabledAt  DateTime? @db.Timestamptz(3)
-  totpLastUsedStep BigInt?
-  sessionVersion Int       @default(0)
-  deletedAt      DateTime? @db.Timestamptz(3)
-  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
-  updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
+  totpEnabledAt       DateTime? @db.Timestamptz(3)
+  totpLastUsedStep    BigInt?
+  sessionVersion      Int       @default(0)
+  deletedAt           DateTime? @db.Timestamptz(3)
+  createdAt           DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime  @updatedAt @db.Timestamptz(3)
 
   customerProfile           CustomerProfile?
   guideProfile              GuideProfile?
@@ -229,7 +241,7 @@ model GuideProfile {
   languages          String[]               @default([])
   yearsExperience    Int                    @default(0)
   operatingAreas     String[]               @default([])
-  verificationStatus GuideApplicationStatus @default(PENDING)
+  verificationStatus GuideApplicationStatus @default(DRAFT)
   /// Cached catalogue aggregates for guide discovery; kept in sync when reviews change.
   averageRating      Decimal                @default(0) @db.Decimal(3, 2)
   totalReviews       Int                    @default(0)
@@ -286,7 +298,28 @@ model GuideApplication {
   operatingAreas        String[]               @default([])
   emergencyContactName  String
   emergencyContactPhone String
-  status                GuideApplicationStatus @default(PENDING)
+  status                GuideApplicationStatus @default(DRAFT)
+  qualifications        String[]               @default([])
+  bankName              String?
+  bankAccountHolder     String?
+  bankBranchCode        String?
+  bankAccountType       String?
+  bankAccountNumberEncrypted String?
+  permitsRequired       Boolean                @default(false)
+  serviceTitle          String?
+  serviceDescription    String?
+  serviceCategoryId     String?                @db.Uuid
+  serviceDestinationId  String?                @db.Uuid
+  serviceCancellationPolicy String?
+  proposedExperienceSlug String?                @unique
+  serviceDurationMinutes Int?
+  serviceMeetingPoint   String?
+  serviceMinGuests      Int?
+  serviceMaxGuests      Int?
+  serviceInclusions     String[]               @default([])
+  serviceExclusions     String[]               @default([])
+  servicePrice          Decimal?               @db.Decimal(12, 2)
+  serviceCurrency       String?                @db.Char(3)
   adminNotes            String?
   submittedAt           DateTime               @default(now()) @db.Timestamptz(3)
   approvedAt            DateTime?              @db.Timestamptz(3)
@@ -310,6 +343,9 @@ model GuideApplicationDocument {
   originalFilename String
   mimeType         String
   sizeBytes        Int
+  encryptedContent Bytes?
+  encryptionIv     Bytes?
+  encryptionTag    Bytes?
   createdAt        DateTime          @default(now()) @db.Timestamptz(3)
   updatedAt        DateTime          @updatedAt @db.Timestamptz(3)
 
@@ -409,6 +445,7 @@ model Experience {
   price              Decimal          @db.Decimal(12, 2)
   currency           String           @db.Char(3)
   maxGuests          Int
+  minGuests          Int                @default(1)
   meetingPoint       String?
   pickupAvailable    Boolean          @default(false)
   pickupInformation  String?
@@ -417,6 +454,7 @@ model Experience {
   requirements       String[]         @default([])
   cancellationPolicy String
   status             ExperienceStatus @default(DRAFT)
+  verificationStatus GuideApplicationStatus @default(DRAFT)
   featured           Boolean          @default(false)
   deletedAt          DateTime?        @db.Timestamptz(3)
   createdAt          DateTime         @default(now()) @db.Timestamptz(3)
@@ -430,6 +468,7 @@ model Experience {
   bookings      Booking[]
   reviews       Review[]          @relation("ReviewExperience")
   wishlistItems Wishlist[]
+  offeredRequests  CustomRequest[]   @relation("CustomRequestOfferedExperience")
 
   @@index([status, featured, deletedAt])
   @@index([destinationId, status])
@@ -471,26 +510,36 @@ model Availability {
 }
 
 model Booking {
-  id             String        @id @default(uuid()) @db.Uuid
-  idempotencyKeyHash String     @unique
-  requestHash    String
-  customerId     String        @db.Uuid
-  guideId        String        @db.Uuid
-  experienceId   String        @db.Uuid
-  availabilityId String?       @db.Uuid
-  experienceDate DateTime      @db.Timestamptz(3)
-  travellerCount Int
-  adultsCount    Int
-  childrenCount  Int
-  timeSlot       String
-  totalPrice     Decimal       @db.Decimal(12, 2)
-  currency       String        @db.Char(3)
-  status         BookingStatus @default(PENDING)
+  id                         String        @id @default(uuid()) @db.Uuid
+  idempotencyKeyHash         String        @unique
+  requestHash                String
+  customerId                 String        @db.Uuid
+  guideId                    String        @db.Uuid
+  experienceId               String        @db.Uuid
+  availabilityId             String?       @db.Uuid
+  experienceDate             DateTime      @db.Timestamptz(3)
+  travellerCount             Int
+  adultsCount                Int
+  childrenCount              Int
+  timeSlot                   String
+  totalPrice                 Decimal       @db.Decimal(12, 2)
+  baseAmount                 Decimal?      @db.Decimal(12, 2)
+  optionalExtrasAmount       Decimal?      @db.Decimal(12, 2)
+  transportAmount            Decimal?      @db.Decimal(12, 2)
+  platformFeeAmount          Decimal?      @db.Decimal(12, 2)
+  taxAmount                  Decimal?      @db.Decimal(12, 2)
+  bookingType                BookingType   @default(INSTANT)
+  cancellationPolicySnapshot String?
+  agreedTermsSnapshot       Json?
+  customRequestId           String?       @unique @db.Uuid
+  serviceCompletedAt         DateTime?     @db.Timestamptz(3)
+  currency                   String        @db.Char(3)
+  status                     BookingStatus @default(PENDING)
   /// Aggregate collection state for this booking; individual attempts live in Payment.
-  paymentStatus  PaymentStatus @default(PENDING)
-  reservationExpiresAt DateTime? @db.Timestamptz(3)
-  createdAt      DateTime      @default(now()) @db.Timestamptz(3)
-  updatedAt      DateTime      @updatedAt @db.Timestamptz(3)
+  paymentStatus              PaymentStatus @default(PENDING)
+  reservationExpiresAt       DateTime?     @db.Timestamptz(3)
+  createdAt                  DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt                  DateTime      @updatedAt @db.Timestamptz(3)
 
   customer     User           @relation("BookingCustomer", fields: [customerId], references: [id], onDelete: Restrict)
   guide        GuideProfile   @relation("BookingGuide", fields: [guideId], references: [id], onDelete: Restrict)
@@ -500,6 +549,7 @@ model Booking {
   payments     Payment[]
   payout       Payout?
   review       Review?
+  customRequest CustomRequest? @relation(fields: [customRequestId], references: [id], onDelete: Restrict)
 
   /// Supports a composite FK from Review so its denormalized lookup keys match the booking.
   @@unique([id, customerId, guideId, experienceId], name: "booking_review_identity")
@@ -535,6 +585,7 @@ model Payment {
   providerTransactionId String?         @unique
   paymentReference      String          @unique
   amount                Decimal         @db.Decimal(12, 2)
+  refundedAmount        Decimal         @default(0) @db.Decimal(12, 2)
   currency              String          @db.Char(3)
   status                PaymentStatus   @default(PENDING)
   metadata              Json?
@@ -549,16 +600,20 @@ model Payment {
 }
 
 model Payout {
-  id           String       @id @default(uuid()) @db.Uuid
-  bookingId    String       @unique @db.Uuid
-  guideId      String       @db.Uuid
-  amount       Decimal      @db.Decimal(12, 2)
-  currency     String       @db.Char(3)
-  status       PayoutStatus @default(PENDING)
-  eftReference String?      @unique
-  paidAt       DateTime?    @db.Timestamptz(3)
-  createdAt    DateTime     @default(now()) @db.Timestamptz(3)
-  updatedAt    DateTime     @updatedAt @db.Timestamptz(3)
+  id               String       @id @default(uuid()) @db.Uuid
+  bookingId        String       @unique @db.Uuid
+  guideId          String       @db.Uuid
+  amount           Decimal      @db.Decimal(12, 2)
+  grossAmount      Decimal?     @db.Decimal(12, 2)
+  commissionAmount Decimal?     @db.Decimal(12, 2)
+  commissionRate   Decimal?     @db.Decimal(5, 4)
+  currency         String       @db.Char(3)
+  status           PayoutStatus @default(PENDING)
+  eligibleAt       DateTime?    @db.Timestamptz(3)
+  eftReference     String?      @unique
+  paidAt           DateTime?    @db.Timestamptz(3)
+  createdAt        DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime     @updatedAt @db.Timestamptz(3)
 
   booking Booking      @relation(fields: [bookingId, guideId], references: [id, guideId], onDelete: Restrict)
   guide   GuideProfile @relation(fields: [guideId], references: [id], onDelete: Restrict)
@@ -596,6 +651,8 @@ model Review {
 
 model CustomRequest {
   id                  String              @id @default(uuid()) @db.Uuid
+  idempotencyKeyHash  String?             @unique
+  requestHash         String?
   customerId          String              @db.Uuid
   assignedGuideId     String?             @db.Uuid
   destinationId       String?             @db.Uuid
@@ -613,14 +670,25 @@ model CustomRequest {
   notes               String?
   quotedAmount        Decimal?            @db.Decimal(12, 2)
   quotedCurrency      String?             @db.Char(3)
+  offeredExperienceId String?             @db.Uuid
+  offeredDate         DateTime?           @db.Date
+  offeredTimeSlot     String?
+  offeredTravellerCount Int?
+  offerSnapshot       Json?
+  offerVersion        Int                 @default(0)
+  offeredAt           DateTime?           @db.Timestamptz(3)
+  acceptedAt          DateTime?           @db.Timestamptz(3)
   status              CustomRequestStatus @default(SUBMITTED)
+  bookingType         BookingType         @default(REQUEST_TO_BOOK)
   createdAt           DateTime            @default(now()) @db.Timestamptz(3)
   updatedAt           DateTime            @updatedAt @db.Timestamptz(3)
 
   customer      User           @relation("CustomRequestCustomer", fields: [customerId], references: [id], onDelete: Restrict)
   assignedGuide GuideProfile?  @relation("CustomRequestGuide", fields: [assignedGuideId], references: [id], onDelete: SetNull)
   destination   Destination?   @relation(fields: [destinationId], references: [id], onDelete: SetNull)
+  offeredExperience Experience? @relation("CustomRequestOfferedExperience", fields: [offeredExperienceId], references: [id], onDelete: Restrict)
   replies       RequestReply[]
+  booking       Booking?
 
   @@index([customerId, status, createdAt])
   @@index([assignedGuideId, status])

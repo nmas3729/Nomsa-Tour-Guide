@@ -7,6 +7,14 @@ import { ArrowRight, Bell, Compass, Heart, MapPin, ShieldCheck, Sparkles } from 
 import { Badge } from "@/src/components/ui/badge";
 import { Button } from "@/src/components/ui/button";
 import { BookingCard } from "@/src/components/cards/booking-card";
+import { AdminFinancialTools } from "@/src/components/dashboard/admin-financial-tools";
+import { AdminGuideReview } from "@/src/components/dashboard/admin-guide-review";
+import { AdminCustomRequestAssignment } from "@/src/components/dashboard/admin-custom-request-assignment";
+import { AdminReviewModeration } from "@/src/components/dashboard/admin-review-moderation";
+import { GuideOnboardingForm } from "@/src/components/dashboard/guide-onboarding-form";
+import { GuideCustomRequestCard } from "@/src/components/dashboard/guide-custom-request-card";
+import { CustomerCustomRequestCard } from "@/src/components/booking/customer-custom-request-card";
+import { LogoutForm } from "@/src/features/auth/components/auth-forms";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Container } from "@/src/components/layout/container";
 import { PageHeader } from "@/src/components/layout/page-header";
@@ -15,6 +23,7 @@ import { getCurrentUser } from "@/src/lib/auth/session";
 import { formatCurrency, formatDate } from "@/src/lib/format";
 import { getDashboardData } from "@/src/server/services/dashboard-service";
 import {
+  experienceVerificationStatusDescription,
   guideApplicationStatusDescription,
   guideApplicationStatusLabel,
 } from "@/src/features/auth/guide-application-status";
@@ -69,6 +78,19 @@ async function DashboardContent() {
   const data = await getDashboardData(user);
 
   const firstName = user.name.split(" ")[0];
+  if (data.role === "GUIDE" && data.onboardingOnly) {
+    return (
+      <Container className="dashboard-account py-12 sm:py-16">
+        <PageHeader
+          eyebrow="Guide onboarding"
+          title={`Welcome, ${firstName}.`}
+          description="Complete your profile, provide the required documents, and submit your proposed experience for manual review. No guide profile or experience becomes bookable through draft or submission."
+          actions={<LogoutForm />}
+        />
+        <GuideOnboardingForm status={data.applicationStatus} />
+      </Container>
+    );
+  }
 
   return (
       <Container className="dashboard-account py-12 sm:py-16">
@@ -78,9 +100,18 @@ async function DashboardContent() {
             title={`Sawubona, ${firstName} — your season at a glance.`}
             description="Confirmed tours, guest payment states, and payouts across your South African experiences. Booking, payment, and refund states are shown separately, exactly as recorded."
             actions={
-              <Button asChild className="min-h-11 rounded-full" variant="outline">
-                <Link href="/experiences">Public listings</Link>
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button asChild className="min-h-11 rounded-full" variant="outline">
+                  <Link href="/experiences">Public listings</Link>
+                </Button>
+                <Button asChild className="min-h-11 rounded-full" variant="outline">
+                  <a download href="/api/dashboard/records?type=bookings">Download bookings</a>
+                </Button>
+                <Button asChild className="min-h-11 rounded-full" variant="outline">
+                  <a download href="/api/dashboard/records?type=payouts">Download payouts</a>
+                </Button>
+                <LogoutForm />
+              </div>
             }
           />
         ) : data.role === "ADMIN" || data.role === "SUPER_ADMIN" ? (
@@ -88,6 +119,17 @@ async function DashboardContent() {
             eyebrow="Marketplace overview"
             title="Nomsa at a glance."
             description="Travellers, hosts, experiences, and payments across the marketplace."
+            actions={
+              <div className="flex flex-wrap gap-2">
+                <Button asChild className="min-h-11 rounded-full" variant="outline">
+                  <a download href="/api/dashboard/records?type=bookings">Download bookings</a>
+                </Button>
+                <Button asChild className="min-h-11 rounded-full" variant="outline">
+                  <a download href="/api/dashboard/records?type=payouts">Download payouts</a>
+                </Button>
+                <LogoutForm />
+              </div>
+            }
           />
         ) : (
           <PageHeader
@@ -95,11 +137,14 @@ async function DashboardContent() {
             title={`Sawubona, ${firstName} — where to next?`}
             description="Your upcoming safaris, township walks, and coastal escapes in one calm place. Booking, payment, and refund states are shown separately."
             actions={
-              <Button asChild className="min-h-11 rounded-full" variant="outline">
-                <Link href="/account/change-password">
-                  Account security
-                </Link>
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button asChild className="min-h-11 rounded-full" variant="outline">
+                  <Link href="/account/change-password">
+                    Account security
+                  </Link>
+                </Button>
+                <LogoutForm />
+              </div>
             }
           />
         )}
@@ -111,6 +156,30 @@ async function DashboardContent() {
               <Metric label="Needs your eye" value={data.attentionBookings.length} hint="Pending, failed, cancelled, or refunding." />
               <Metric label="Stories collected" value={data.completedBookings.length} hint="Experiences you have completed." />
             </div>
+
+            <section aria-label="Custom itinerary requests" className="mt-10" id="custom-itinerary-requests">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Request to book</p>
+                  <h2 className="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl">Custom itinerary requests</h2>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    These requests are separate from instant bookings and are not confirmed until a booking and payment are recorded.
+                  </p>
+                </div>
+                <Button asChild className="rounded-full" variant="outline">
+                  <Link href="/custom-itinerary">Start a custom request</Link>
+                </Button>
+              </div>
+              {data.customRequests.length ? (
+                <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+                  {data.customRequests.map((request) => (
+                    <CustomerCustomRequestCard key={request.id} request={request} />
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-4 text-sm text-muted-foreground">You have not submitted a custom itinerary request.</p>
+              )}
+            </section>
 
             <section aria-label="Bookings needing attention" className="mt-10">
               <div className="flex flex-wrap items-end justify-between gap-3">
@@ -391,6 +460,85 @@ async function DashboardContent() {
               </CardContent>
             </Card>
 
+            <div className="mt-8">
+              <section aria-label="Assigned custom itinerary requests" className="mb-10">
+                <h2 className="font-display text-xl font-semibold">Custom itinerary requests</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Review assigned requests, send a final offer from an approved listing, or decline. Travellers must accept the offer before payment can begin.
+                </p>
+                {data.customRequests.length ? (
+                  <ul className="mt-4 grid gap-3 lg:grid-cols-2">
+                    {data.customRequests.map((request) => (
+                      <GuideCustomRequestCard
+                        experiences={data.offerableExperiences}
+                        key={request.id}
+                        request={request}
+                      />
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-4 rounded-xl border border-border/60 bg-card p-4 text-sm text-muted-foreground">
+                    No itinerary requests are currently assigned to you.
+                  </p>
+                )}
+              </section>
+              <section aria-label="Experience verification statuses">
+              <h2 className="font-display text-xl font-semibold">Your experience listings</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Each experience requires separate approval. Only approved, published listings are visible to travellers.
+              </p>
+              {data.experienceReviews.length ? (
+                <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {data.experienceReviews.map((experience) => (
+                    <li className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-card p-4" key={experience.id}>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold">{experience.title}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {experienceVerificationStatusDescription(experience.verificationStatus)}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <Badge variant={experience.verificationStatus === "APPROVED" ? "success" : "warning"}>
+                          {guideApplicationStatusLabel(experience.verificationStatus)}
+                        </Badge>
+                        {experience.verificationStatus === "APPROVED" && experience.status === "PUBLISHED" ? (
+                          <Button asChild size="sm" variant="outline">
+                            <Link href={`/experiences/${experience.slug}`}>View listing</Link>
+                          </Button>
+                        ) : null}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-4 rounded-xl border border-border/60 bg-card p-4 text-sm text-muted-foreground">
+                  No experience listings have been submitted yet.
+                </p>
+              )}
+            </section>
+            </div>
+
+            <section aria-label="Tours ready to mark complete" className="mt-12">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Service completion</p>
+                <h2 className="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+                  Tours ready to close
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                  Only mark a tour completed after it has finished. Any pending payout uses the captured payment less recorded refunds and the owner-approved commission rate stored with that payout.
+                </p>
+              </div>
+              {data.completionBookings.length ? (
+                <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                  {data.completionBookings.map((booking) => (
+                    <BookingCard key={booking.id} booking={booking} tone="host" />
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-muted-foreground">No bookings are awaiting service completion.</p>
+              )}
+            </section>
+
             <section aria-label="Bookings needing attention" className="mt-12">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Needs your eye</p>
@@ -529,6 +677,24 @@ async function DashboardContent() {
                         <p className="mt-1 text-xs text-muted-foreground">
                           {payout.status.replaceAll("_", " ")} · {formatDate(payout.createdAt)}
                         </p>
+                        {payout.grossAmount && payout.commissionAmount ? (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            After refunds {formatCurrency(Number(payout.grossAmount), payout.currency)} ·{" "}
+                            {payout.commissionRate
+                              ? `${new Intl.NumberFormat("en-ZA", { style: "percent", maximumFractionDigits: 2 }).format(Number(payout.commissionRate))} commission`
+                              : "Commission rate unavailable"}{" "}
+                            {formatCurrency(Number(payout.commissionAmount), payout.currency)}
+                          </p>
+                        ) : (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Commission breakdown is unavailable for this older payout.
+                          </p>
+                        )}
+                        {payout.status !== "PAID" ? (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Not recorded as paid. Eligible {payout.eligibleAt ? formatDate(payout.eligibleAt) : "date unavailable"}.
+                          </p>
+                        ) : null}
                       </li>
                     ))}
                   </ul>
@@ -571,6 +737,61 @@ async function DashboardContent() {
             <Metric label="Payouts awaiting approval" value={data.pendingPayouts} />
             <Metric label="Reviews awaiting moderation" value={data.moderationQueue} />
           </div>
+          <AdminFinancialTools
+            payouts={data.pendingPayoutRecords}
+            paymentCases={data.recentPaymentCases}
+            serviceBookings={data.pendingServiceCompletions}
+          />
+          <AdminGuideReview />
+          <AdminReviewModeration />
+          <section aria-label="Custom itinerary request queue" className="mt-8 rounded-2xl border border-border/60 bg-card p-5 sm:p-6">
+            <h2 className="font-display text-xl font-semibold">Custom itinerary request queue</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Request-to-book submissions awaiting review. A request or quote is not a confirmed booking or payment.
+            </p>
+            {data.customRequests.length ? (
+              <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+                {data.customRequests.map((request) => (
+                  <li className="rounded-xl border border-border/60 p-4" key={request.id}>
+                    <p className="font-semibold">{request.destinationText} · {request.status.replaceAll("_", " ")}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {request.customer.name} · {request.customer.email} · {request.travellerCount} travellers
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {request.flexibleDates
+                        ? "Flexible dates"
+                        : `${request.travelStartDate ? formatDate(request.travelStartDate) : "Date unavailable"} – ${request.travelEndDate ? formatDate(request.travelEndDate) : "Date unavailable"}`}
+                      {request.budget
+                        ? ` · Budget ${formatCurrency(Number(request.budget), request.budgetCurrency || "ZAR")}`
+                        : ""}
+                    </p>
+                    {request.interests.length ? (
+                      <p className="mt-2 text-xs text-muted-foreground">Interests: {request.interests.join(", ")}</p>
+                    ) : null}
+                    {request.notes ? <p className="mt-2 whitespace-pre-wrap text-xs text-muted-foreground">{request.notes}</p> : null}
+                    {request.quotedAmount ? (
+                      <p className="mt-2 text-sm font-semibold">
+                        Quote recorded: {formatCurrency(Number(request.quotedAmount), request.quotedCurrency || "ZAR")}
+                      </p>
+                    ) : null}
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {request.assignedGuide
+                        ? `Assigned to ${request.assignedGuide.user.name}`
+                        : "Not assigned to a guide"}
+                    </p>
+                    <AdminCustomRequestAssignment
+                      assignedGuideId={request.assignedGuideId}
+                      canAssign={request.status === "SUBMITTED" || request.status === "ASSIGNED"}
+                      requestId={request.id}
+                    />
+                    <p className="mt-2 break-all text-[10px] text-muted-foreground">Reference: {request.id}</p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-4 text-sm text-muted-foreground">No custom itinerary requests need review.</p>
+            )}
+          </section>
           </>
         )}
       </Container>

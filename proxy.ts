@@ -28,12 +28,20 @@ function applySecurityHeaders(
   request: NextRequest,
   contentSecurityPolicy: string,
 ): NextResponse {
+  const canonicalHostname = new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://nomsatourguides.co.za",
+  ).hostname;
+
   response.headers.set("Content-Security-Policy", contentSecurityPolicy);
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+
+  if (request.nextUrl.hostname !== canonicalHostname) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  }
 
   if (request.nextUrl.protocol === "https:") {
     response.headers.set(

@@ -14,6 +14,13 @@ const invoice: InvoiceDocumentData = {
   currency: "ZAR",
   paymentStatus: "SUCCEEDED",
   paidAt: "2026-10-17T08:12:00.000Z",
+  refundedAmount: 0,
+  baseAmount: 2400,
+  optionalExtrasAmount: 0,
+  transportAmount: 0,
+  platformFeeAmount: 0,
+  taxAmount: 0,
+  cancellationPolicySnapshot: "Cancellation is free up to 48 hours before the experience.",
 };
 
 describe("invoice PDF generation", () => {
@@ -27,8 +34,11 @@ describe("invoice PDF generation", () => {
     expect(content).toContain("Destination: Cape Town, Western Cape");
     expect(content).toContain("Travellers: 2");
     expect(content).toContain("Payment status: SUCCEEDED");
-    expect(content).toContain("Invoice date \\(payment approval date\\): 2026-10-17");
-    expect(content).toContain("Amount: ZAR 2400.00");
+    expect(content).toContain("PAYMENT RECEIPT");
+    expect(content).toContain("Receipt date \\(payment approval date\\): 2026-10-17");
+    expect(content).toContain("Total paid: ZAR 2400.00");
+    expect(content).toContain("Base price: ZAR 2400.00");
+    expect(content).toContain("Cancellation terms: Cancellation is free up to 48 hours");
     expect(content).toContain("billing@nomsatourguides.co.za");
     expect(content).toContain("+27 66 485 8827");
     expect(content.endsWith("%%EOF")).toBe(true);

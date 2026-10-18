@@ -64,7 +64,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
   }
 
   return (
-    <form className="auth-form" onSubmit={form.handleSubmit(onSubmit)} noValidate>
+    <form className="auth-form" method="post" onSubmit={form.handleSubmit(onSubmit)} noValidate>
       <AuthField id="login-email" label="Email address" error={form.formState.errors.email?.message}>
         <Input autoComplete="email" id="login-email" type="email" {...form.register("email")} />
       </AuthField>
@@ -128,7 +128,7 @@ export function RegistrationForm() {
   }
 
   return (
-    <form className="auth-form" onSubmit={form.handleSubmit(onSubmit)} noValidate>
+    <form className="auth-form" method="post" onSubmit={form.handleSubmit(onSubmit)} noValidate>
       <AuthField id="register-role" label="I am joining as">
         <Select
           id="register-role"
@@ -223,7 +223,7 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form className="auth-form" onSubmit={form.handleSubmit(onSubmit)} noValidate>
+    <form className="auth-form" method="post" onSubmit={form.handleSubmit(onSubmit)} noValidate>
       <AuthField id="forgot-email" label="Email address" error={form.formState.errors.email?.message}>
         <Input autoComplete="email" id="forgot-email" type="email" {...form.register("email")} />
       </AuthField>
@@ -251,7 +251,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
   }
 
   return (
-    <form className="auth-form" onSubmit={form.handleSubmit(onSubmit)} noValidate>
+    <form className="auth-form" method="post" onSubmit={form.handleSubmit(onSubmit)} noValidate>
       <AuthField id="reset-password" label="New password" hint="12+ characters with upper/lowercase, a number, and a symbol." error={form.formState.errors.password?.message}>
         <Input autoComplete="new-password" id="reset-password" type="password" {...form.register("password")} />
       </AuthField>
@@ -291,7 +291,7 @@ export function VerifyEmailForm({ token }: { token?: string }) {
   return (
     <div className="auth-form">
       {token ? (
-        <form onSubmit={verifyForm.handleSubmit(verify)} noValidate>
+        <form method="post" onSubmit={verifyForm.handleSubmit(verify)} noValidate>
           <Input type="hidden" {...verifyForm.register("token")} />
           <AuthSubmitButton pending={verifyForm.formState.isSubmitting}>Verify email</AuthSubmitButton>
         </form>
@@ -300,7 +300,7 @@ export function VerifyEmailForm({ token }: { token?: string }) {
         <h2>{token ? "Need another link?" : "Request a verification link"}</h2>
         <p>Enter the email address used to create your account.</p>
       </div>
-      <form onSubmit={resendForm.handleSubmit(resend)} noValidate>
+      <form method="post" onSubmit={resendForm.handleSubmit(resend)} noValidate>
         <AuthField id="verify-email" label="Email address" error={resendForm.formState.errors.email?.message}>
           <Input
             autoComplete="email"
@@ -334,7 +334,7 @@ export function ChangePasswordForm() {
   }
 
   return (
-    <form className="auth-form" onSubmit={form.handleSubmit(onSubmit)} noValidate>
+    <form className="auth-form" method="post" onSubmit={form.handleSubmit(onSubmit)} noValidate>
       <AuthField id="change-current-password" label="Current password" error={form.formState.errors.currentPassword?.message}>
         <Input autoComplete="current-password" id="change-current-password" type="password" {...form.register("currentPassword")} />
       </AuthField>

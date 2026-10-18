@@ -10,6 +10,8 @@ import {
   refundStatusCopy,
   type RefundState,
 } from "@/src/components/booking/booking-confirmation-state";
+import { CompleteBookingAction } from "@/src/components/booking/complete-booking-action";
+import { ReviewBookingForm } from "@/src/components/booking/review-booking-form";
 
 import type { BookingStatus, PaymentStatus } from "@/src/server/db/generated/enums";
 
@@ -21,10 +23,16 @@ export type DashboardBooking = {
   totalPrice: number | string | { toString(): string };
   currency: string;
   travellerCount?: number | null;
+  bookingType?: "INSTANT" | "REQUEST_TO_BOOK";
+  timeSlot?: string;
+  canMarkComplete?: boolean;
+  payments?: Array<{ refundedAmount: number | string | { toString(): string } }>;
+  review?: { id: string; status: string } | null;
   experience: {
     title: string;
     slug: string;
     meetingPoint?: string | null;
+    durationMinutes?: number | null;
     destination?: {
       name: string;
       city?: { province?: { name: string } } | null;
@@ -54,6 +62,8 @@ function statusBadgeVariant(
     status === "PROCESSING" ||
     status === "AWAITING_PAYMENT" ||
     status === "REFUND_PENDING" ||
+    status === "PARTIALLY_REFUNDED" ||
+    status === "DISPUTED" ||
     status === "REFUND_REQUESTED"
   ) {
     return "warning";
@@ -86,6 +96,7 @@ export function BookingCard({ booking, tone = "guest" }: { booking: DashboardBoo
   const destination = booking.experience.destination ?? null;
   const provinceName = destination?.city?.province?.name ?? null;
   const meetingPoint = booking.experience.meetingPoint?.trim() || null;
+  const refundedAmount = Number(booking.payments?.[0]?.refundedAmount ?? 0);
   const bookingRef = booking.id.replace(/-/g, "").slice(0, 8).toUpperCase();
   const actionNeeded =
     booking.paymentStatus === "PENDING" ||
@@ -95,6 +106,7 @@ export function BookingCard({ booking, tone = "guest" }: { booking: DashboardBoo
     actionNeeded ||
     booking.status === "PENDING" ||
     booking.status === "AWAITING_PAYMENT";
+  const canMarkComplete = tone === "host" && booking.canMarkComplete === true;
 
   return (
     <Card className="booking-history-card group">
@@ -116,6 +128,11 @@ export function BookingCard({ booking, tone = "guest" }: { booking: DashboardBoo
               </Badge>
             ) : null}
           </div>
+          {refundedAmount > 0 ? (
+            <p className="text-xs font-medium text-muted-foreground">
+              Refund recorded · {formatCurrency(refundedAmount, booking.currency)}
+            </p>
+          ) : null}
           <p className="shrink-0 pl-0 text-left sm:text-right">
             <span className="block font-display text-xl font-semibold tracking-tight text-foreground">
               {formatCurrency(Number(booking.totalPrice), booking.currency)}
@@ -139,6 +156,20 @@ export function BookingCard({ booking, tone = "guest" }: { booking: DashboardBoo
               {booking.experience.title}
             </Link>
           </h3>
+          {booking.bookingType ? (
+            <p className="mt-1 text-xs font-semibold text-primary">
+              {booking.bookingType === "INSTANT" ? "Instant booking" : "Request to book"}
+            </p>
+          ) : null}
+          {tone === "guest" ? (
+            <Link
+              className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary underline-offset-4 hover:underline"
+              href={`/booking/confirmation?bookingId=${encodeURIComponent(booking.id)}`}
+            >
+              View booking details
+              <ArrowUpRight aria-hidden="true" className="size-3.5" />
+            </Link>
+          ) : null}
           <p className="mt-1.5 flex items-center gap-2 text-sm text-muted-foreground">
             <MapPin aria-hidden="true" className="size-4 shrink-0 text-primary" />
             {destination
@@ -182,6 +213,17 @@ export function BookingCard({ booking, tone = "guest" }: { booking: DashboardBoo
               ? "No preparation is needed unless the guest rebooks; payment is recorded as failed."
               : "Hold preparations until booking is confirmed and payment is successful."}
           </p>
+        ) : null}
+
+        {canMarkComplete ? <CompleteBookingAction bookingId={booking.id} /> : null}
+        {tone === "guest" && booking.status === "COMPLETED" ? (
+          booking.review ? (
+            <p className="rounded-xl border border-border/60 bg-background/70 p-3 text-xs text-muted-foreground" role="status">
+              Review {booking.review.status.toLowerCase()} for this completed booking.
+            </p>
+          ) : (
+            <ReviewBookingForm bookingId={booking.id} />
+          )
         ) : null}
 
         <p className="flex items-center gap-2 border-t border-border/60 pt-3 text-xs text-muted-foreground">

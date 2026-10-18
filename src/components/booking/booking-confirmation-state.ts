@@ -21,6 +21,8 @@ export function paymentStatusLabel(status: BookingRecordSummary["paymentStatus"]
     PENDING: "Payment pending",
     PROCESSING: "Payment processing",
     SUCCEEDED: "Payment succeeded",
+    PARTIALLY_REFUNDED: "Partially refunded",
+    DISPUTED: "Payment disputed",
     FAILED: "Payment failed",
     CANCELLED: "Payment cancelled",
     REFUND_PENDING: "Refund pending",
@@ -55,6 +57,22 @@ export function confirmationMessage(booking: BookingRecordSummary): {
     return {
       title: "Payment was not completed",
       description: "The payment status is recorded as failed, so this booking is not confirmed.",
+      tone: "attention",
+    };
+  }
+
+  if (booking.paymentStatus === "PARTIALLY_REFUNDED") {
+    return {
+      title: "Partial refund recorded",
+      description: `Booking status: ${bookingStatusLabel(booking.status)}. A partial refund is recorded; the remaining payment status is not represented as fully paid.`,
+      tone: "attention",
+    };
+  }
+
+  if (booking.paymentStatus === "DISPUTED") {
+    return {
+      title: "Payment disputed",
+      description: `Booking status: ${bookingStatusLabel(booking.status)}. Payment is marked as disputed and is not treated as cleared for payout.`,
       tone: "attention",
     };
   }
@@ -162,15 +180,15 @@ export function refundStatusCopy(state: RefundState): { title: string; descripti
 
 export function isPaymentRecordedForBooking(booking: BookingRecordSummary): boolean {
   return (
-    booking.paymentStatus === "SUCCEEDED" &&
+    (booking.paymentStatus === "SUCCEEDED" || booking.paymentStatus === "PARTIALLY_REFUNDED") &&
     ["CONFIRMED", "CHECKED_IN", "COMPLETED"].includes(booking.status)
   );
 }
 
 export function isInvoiceAvailable(booking: BookingRecordSummary): boolean {
   return (
-    booking.paymentStatus === "SUCCEEDED" &&
+    ["SUCCEEDED", "PARTIALLY_REFUNDED", "DISPUTED", "REFUND_PENDING", "REFUNDED"].includes(booking.paymentStatus) &&
     Boolean(booking.paidAt) &&
-    ["CONFIRMED", "CHECKED_IN", "COMPLETED", "NO_SHOW"].includes(booking.status)
+    ["CONFIRMED", "CHECKED_IN", "COMPLETED", "NO_SHOW", "CANCELLED", "REFUND_REQUESTED", "REFUNDED"].includes(booking.status)
   );
 }

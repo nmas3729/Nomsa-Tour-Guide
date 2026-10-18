@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { UserRole } from "@/src/server/db/generated/enums";
+import { getCurrentUser } from "@/src/lib/auth/session";
 import { getBookingConfirmation } from "@/src/server/services/booking-service";
 
 export async function GET(
@@ -15,7 +17,9 @@ export async function GET(
   try {
     const access = await cookies();
     const key = access.get(`booking-access-${id}`)?.value;
-    const booking = await getBookingConfirmation(id, key);
+    const principal = await getCurrentUser();
+    const customerId = principal?.role === UserRole.CUSTOMER ? principal.id : undefined;
+    const booking = await getBookingConfirmation(id, key, customerId);
     if (!booking) {
       return NextResponse.json(
         { error: "Booking not found or access has expired." },

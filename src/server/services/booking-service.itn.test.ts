@@ -1,8 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Prisma } from "@/src/server/db/generated/client";
+import { hashPassword } from "@/src/features/auth/lib/password";
 import { getServerEnvironment } from "@/src/config/env";
 import { getPrismaClient } from "@/src/server/db/prisma";
-import { verifyPayFastITN } from "@/src/server/integrations/payfast";
-import { getBookingConfirmation, processPayFastITN } from "./booking-service";
+import { createPayFastPaymentPayload, verifyPayFastITN } from "@/src/server/integrations/payfast";
+import {
+  createBooking,
+  getBookingConfirmation,
+  getPayFastCheckoutForBooking,
+  processPayFastITN,
+} from "./booking-service";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/src/features/auth/lib/password", () => ({ hashPassword: vi.fn() }));
@@ -19,6 +26,8 @@ vi.mock("@/src/server/integrations/payfast", () => ({
 const environmentMock = vi.mocked(getServerEnvironment);
 const prismaClientMock = vi.mocked(getPrismaClient);
 const verifyITNMock = vi.mocked(verifyPayFastITN);
+const hashPasswordMock = vi.mocked(hashPassword);
+const createPaymentPayloadMock = vi.mocked(createPayFastPaymentPayload);
 
 type PaymentRecord = {
   id: string;
@@ -45,19 +54,39 @@ let client: {
     findMany: ReturnType<typeof vi.fn>;
     count: ReturnType<typeof vi.fn>;
   };
+  user: { findUnique: ReturnType<typeof vi.fn> };
 };
 let transaction: {
   payment: {
     findUnique: ReturnType<typeof vi.fn>;
     updateMany: ReturnType<typeof vi.fn>;
   };
-  booking: { updateMany: ReturnType<typeof vi.fn> };
-  availability: { update: ReturnType<typeof vi.fn> };
+  booking: {
+    updateMany: ReturnType<typeof vi.fn>;
+    findUnique: ReturnType<typeof vi.fn>;
+    findUniqueOrThrow: ReturnType<typeof vi.fn>;
+    create: ReturnType<typeof vi.fn>;
+  };
+  availability: {
+    update: ReturnType<typeof vi.fn>;
+    findUnique: ReturnType<typeof vi.fn>;
+    updateMany: ReturnType<typeof vi.fn>;
+  };
+  user: { findUnique: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn> };
+  experience: { findFirst: ReturnType<typeof vi.fn> };
 };
 
 beforeEach(() => {
-  environmentMock.mockReturnValue({ PAYFAST_MERCHANT_ID: "merchant-test" } as ReturnType<typeof getServerEnvironment>);
+  environmentMock.mockReturnValue({
+    PAYFAST_MERCHANT_ID: "merchant-test",
+    NEXT_PUBLIC_APP_URL: "https://nomsa.test",
+  } as ReturnType<typeof getServerEnvironment>);
   verifyITNMock.mockResolvedValue({ valid: true, reason: "" });
+  hashPasswordMock.mockResolvedValue("hashed-password");
+  createPaymentPayloadMock.mockReturnValue({
+    processUrl: "https://payfast.test",
+    fields: {},
+  });
 
   payment = {
     id: "payment-id",
@@ -85,12 +114,24 @@ beforeEach(() => {
       }),
     },
     booking: {
+      findUnique: vi.fn(async () => null),
+      findUniqueOrThrow: vi.fn(),
+      create: vi.fn(async () => undefined),
       updateMany: vi.fn(async ({ data }: { data: Partial<PaymentRecord["booking"]> }) => {
         Object.assign(payment.booking, data);
         return { count: 1 };
       }),
     },
-    availability: { update: vi.fn(async () => undefined) },
+    availability: {
+      update: vi.fn(async () => undefined),
+      findUnique: vi.fn(),
+      updateMany: vi.fn(async () => ({ count: 1 })),
+    },
+    user: {
+      findUnique: vi.fn(async () => null),
+      create: vi.fn(async () => ({ id: "customer-id", name: "Alex Traveller" })),
+    },
+    experience: { findFirst: vi.fn() },
   };
 
   client = {
@@ -100,8 +141,136 @@ beforeEach(() => {
       findMany: vi.fn(async () => []),
       count: vi.fn(async () => 0),
     },
+    user: { findUnique: vi.fn(async () => null) },
   };
   prismaClientMock.mockReturnValue(client as never);
+});
+
+describe("instant booking price persistence", () => {
+  it("persists only the published base price and records unavailable components without adding fees", async () => {
+    const price = new Prisma.Decimal("650.00");
+    const booking = {
+      id: "booking-id",
+      experienceDate: new Date("2027-01-12T00:00:00.000Z"),
+      travellerCount: 4,
+      adultsCount: 4,
+      childrenCount: 0,
+      timeSlot: "09:00 AM",
+      totalPrice: new Prisma.Decimal("2600.00"),
+      baseAmount: new Prisma.Decimal("2600.00"),
+      optionalExtrasAmount: new Prisma.Decimal(0),
+      transportAmount: new Prisma.Decimal(0),
+      platformFeeAmount: new Prisma.Decimal(0),
+      taxAmount: null,
+      bookingType: "INSTANT",
+      cancellationPolicySnapshot: "Cancel at least 48 hours before the tour.",
+      currency: "ZAR",
+      status: "AWAITING_PAYMENT",
+      paymentStatus: "PENDING",
+      serviceCompletedAt: null,
+      createdAt: new Date("2026-10-18T00:00:00.000Z"),
+      experience: {
+        title: "Bo-Kaap heritage walk",
+        slug: "bo-kaap-local-walk",
+        meetingPoint: "Cape Town",
+        destination: {
+          name: "Cape Town",
+          city: { name: "Cape Town", province: { name: "Western Cape" } },
+        },
+      },
+      guide: { user: { name: "Guide" } },
+      guests: [{
+        fullName: "Alex Traveller",
+        email: "alex@example.com",
+        phone: "+27661234567",
+      }],
+      payments: [{
+        paymentReference: "NOM-REFERENCE",
+        status: "PENDING",
+        amount: new Prisma.Decimal("2600.00"),
+        refundedAmount: new Prisma.Decimal(0),
+        currency: "ZAR",
+        paidAt: null,
+        metadata: null,
+      }],
+    };
+    transaction.experience.findFirst.mockResolvedValue({
+      id: "experience-id",
+      guideId: "guide-id",
+      title: "Bo-Kaap heritage walk",
+      slug: "bo-kaap-local-walk",
+      price,
+      currency: "ZAR",
+      minGuests: 1,
+      maxGuests: 10,
+      cancellationPolicy: "Cancel at least 48 hours before the tour.",
+    });
+    transaction.availability.findUnique.mockResolvedValue({
+      id: "availability-id",
+      remainingCapacity: 10,
+    });
+    transaction.booking.findUniqueOrThrow.mockResolvedValue(booking);
+
+    const futureDate = new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10);
+    await createBooking({
+      experienceSlug: "bo-kaap-local-walk",
+      date: futureDate,
+      timeSlot: "09:00 AM",
+      adultsCount: 4,
+      childrenCount: 0,
+      leadTraveller: {
+        firstName: "Alex",
+        lastName: "Traveller",
+        email: "alex@example.com",
+        phone: "+27661234567",
+        country: "South Africa",
+      },
+      emergencyContact: { name: "Sam Traveller", phone: "+27661234568" },
+    }, "f7858c69-568b-4e5e-927f-e56280f7642c");
+
+    const createdBooking = transaction.booking.create.mock.calls[0][0].data;
+    expect(createdBooking.totalPrice.toString()).toBe("2600");
+    expect(createdBooking.baseAmount.toString()).toBe("2600");
+    expect(createdBooking.optionalExtrasAmount.toString()).toBe("0");
+    expect(createdBooking.transportAmount.toString()).toBe("0");
+    expect(createdBooking.platformFeeAmount.toString()).toBe("0");
+    expect(createdBooking.taxAmount).toBeNull();
+    expect(createdBooking.bookingType).toBe("INSTANT");
+    expect(createdBooking.cancellationPolicySnapshot).toBe("Cancel at least 48 hours before the tour.");
+    expect(createdBooking.payments.create.amount.toString()).toBe("2600");
+    expect(transaction.availability.updateMany).toHaveBeenCalled();
+  });
+
+  it("enforces the experience's persisted group limits when creating an instant booking", async () => {
+    transaction.experience.findFirst.mockResolvedValue({
+      id: "experience-id",
+      guideId: "guide-id",
+      price: new Prisma.Decimal("650.00"),
+      currency: "ZAR",
+      minGuests: 2,
+      maxGuests: 3,
+    });
+
+    await expect(createBooking({
+      experienceSlug: "bo-kaap-local-walk",
+      date: new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10),
+      timeSlot: "09:00 AM",
+      adultsCount: 4,
+      childrenCount: 0,
+      leadTraveller: {
+        firstName: "Alex",
+        lastName: "Traveller",
+        email: "alex@example.com",
+        phone: "+27661234567",
+        country: "South Africa",
+      },
+      emergencyContact: { name: "Sam Traveller", phone: "+27661234568" },
+    }, "456f7554-96ee-4bd9-a27c-d34cc0da7c65")).rejects.toMatchObject({
+      status: 409,
+      message: "This experience accepts 2 to 3 travellers.",
+    });
+    expect(transaction.availability.updateMany).not.toHaveBeenCalled();
+  });
 });
 
 function itn(paymentStatus: string) {
@@ -116,6 +285,21 @@ function itn(paymentStatus: string) {
 }
 
 describe("processPayFastITN booking/payment transitions", () => {
+  it("refuses checkout for an expired reservation even before the cleanup job runs", async () => {
+    client.booking.findFirst.mockResolvedValue({
+      id: "booking-id",
+      status: "AWAITING_PAYMENT",
+      paymentStatus: "PENDING",
+      reservationExpiresAt: new Date(Date.now() - 60_000),
+      customRequestId: null,
+    });
+
+    await expect(getPayFastCheckoutForBooking("booking-id", "customer-id")).rejects.toMatchObject({
+      status: 409,
+      message: "This booking is not ready for payment.",
+    });
+    expect(createPaymentPayloadMock).not.toHaveBeenCalled();
+  });
   it("changes an awaiting booking to confirmed only for a completed payment", async () => {
     const result = await processPayFastITN(itn("COMPLETE"), "complete", null);
 
@@ -300,7 +484,10 @@ describe("processPayFastITN booking/payment transitions", () => {
     });
     expect(client.booking.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: "booking-id", idempotencyKeyHash: expect.any(String) },
+        where: {
+          id: "booking-id",
+          OR: [{ idempotencyKeyHash: expect.any(String) }],
+        },
       }),
     );
   });

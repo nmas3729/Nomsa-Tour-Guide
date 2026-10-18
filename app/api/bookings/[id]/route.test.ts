@@ -1,10 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { cookies } from "next/headers";
+import { getCurrentUser } from "@/src/lib/auth/session";
 import { GET } from "./route";
 import { getBookingConfirmation } from "@/src/server/services/booking-service";
 
 vi.mock("next/headers", () => ({
   cookies: vi.fn(),
+}));
+
+vi.mock("@/src/lib/auth/session", () => ({
+  getCurrentUser: vi.fn(),
 }));
 
 vi.mock("@/src/server/services/booking-service", () => ({
@@ -13,6 +18,7 @@ vi.mock("@/src/server/services/booking-service", () => ({
 }));
 
 const cookiesMock = vi.mocked(cookies);
+const currentUserMock = vi.mocked(getCurrentUser);
 const getBookingConfirmationMock = vi.mocked(getBookingConfirmation);
 const bookingId = "123e4567-e89b-42d3-a456-426614174000";
 
@@ -20,6 +26,7 @@ beforeEach(() => {
   cookiesMock.mockResolvedValue({
     get: () => ({ value: "booking-access-key" }),
   } as Awaited<ReturnType<typeof cookies>>);
+  currentUserMock.mockResolvedValue(null);
 });
 
 describe("GET /api/bookings/[id]", () => {
@@ -34,7 +41,7 @@ describe("GET /api/bookings/[id]", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("private, no-store");
     await expect(response.json()).resolves.toEqual({ booking });
-    expect(getBookingConfirmationMock).toHaveBeenCalledWith(bookingId, "booking-access-key");
+    expect(getBookingConfirmationMock).toHaveBeenCalledWith(bookingId, "booking-access-key", undefined);
   });
 
   it("returns 404 when the booking is missing or access has expired", async () => {

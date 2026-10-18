@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { connection } from "next/server";
 import {
   ArrowDown,
   ArrowRight,
@@ -32,7 +33,11 @@ import { Section } from "@/src/components/layout/section";
 import { imageAlt } from "@/src/lib/image";
 import { FadeIn, FadeInScale, SlideIn } from "@/src/components/ui/motion";
 import { NewsletterForm } from "./marketing-forms";
-import { categories, destinations, experiences, guides, provinces } from "@/src/data/public-site";
+import { categories, destinations, provinces } from "@/src/data/public-site";
+import {
+  getApprovedExperiences,
+  getApprovedGuideProfiles,
+} from "@/src/server/services/public-verification-service";
 
 const categoryIcons: Record<string, LucideIcon> = {
   leaf: Leaf,
@@ -93,7 +98,7 @@ const howItWorksSteps = [
   },
 ];
 
-function HomeHero() {
+function HomeHero({ guideCount, experienceCount }: { guideCount: number; experienceCount: number }) {
   return (
     <section className="home-hero relative isolate -mt-20 flex min-h-[100svh] flex-col justify-between overflow-hidden bg-[#040706] text-white">
       <Image
@@ -226,12 +231,12 @@ function HomeHero() {
       <div className="home-hero-stats border-t border-white/15 bg-black/40 backdrop-blur-lg">
         <Container className="grid grid-cols-2 gap-6 py-6 sm:grid-cols-4">
           <div className="text-center sm:text-left">
-            <p className="font-display text-2xl font-bold tracking-tight text-[#f4cd9f] sm:text-3xl">{guides.length}</p>
-            <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-white/75">Guide Profiles</p>
+            <p className="font-display text-2xl font-bold tracking-tight text-[#f4cd9f] sm:text-3xl">{guideCount}</p>
+            <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-white/75">Approved Guides</p>
           </div>
           <div className="text-center sm:text-left">
-            <p className="font-display text-2xl font-bold tracking-tight text-[#f4cd9f] sm:text-3xl">{experiences.length}</p>
-            <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-white/75">Listed Experiences</p>
+            <p className="font-display text-2xl font-bold tracking-tight text-[#f4cd9f] sm:text-3xl">{experienceCount}</p>
+            <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-white/75">Approved Experiences</p>
           </div>
           <div className="text-center sm:text-left">
             <p className="font-display text-2xl font-bold tracking-tight text-[#f4cd9f] sm:text-3xl">{provinces.length}</p>
@@ -296,7 +301,11 @@ function SectionHeading({
 }
 
 {/* Asymmetrical Bento Destinations Layout */}
-function PopularDestinationsSection() {
+function PopularDestinationsSection({
+  approvedExperiences,
+}: {
+  approvedExperiences: Awaited<ReturnType<typeof getApprovedExperiences>>;
+}) {
   const [featured, second, third, fourth] = destinations;
 
   return (
@@ -369,7 +378,7 @@ function PopularDestinationsSection() {
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-[repeat(3,minmax(0,1fr))]">
             {provinces.map((province) => {
-              const count = experiences.filter((experience) => experience.provinces.includes(province)).length;
+              const count = approvedExperiences.filter((experience) => experience.provinces.includes(province)).length;
               return (
                 <Link
                   className="group flex min-h-14 items-center justify-between gap-2 rounded-2xl border border-border/70 bg-background/70 px-3 py-2.5 text-sm font-semibold text-foreground transition hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-4"
@@ -429,7 +438,11 @@ function EditorialStorytellingBreak() {
 }
 
 {/* Featured Experiences with Asymmetrical Highlight */}
-function FeaturedExperiencesSection() {
+function FeaturedExperiencesSection({
+  approvedExperiences,
+}: {
+  approvedExperiences: Awaited<ReturnType<typeof getApprovedExperiences>>;
+}) {
   return (
     <Section className="bg-secondary/40" spacing="spacious">
       <Container>
@@ -440,19 +453,24 @@ function FeaturedExperiencesSection() {
         />
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {experiences.slice(0, 4).map((experience, index) => (
+          {approvedExperiences.slice(0, 4).map((experience, index) => (
             <FadeIn key={experience.slug} transition={{ delay: index * 0.08 }}>
-              <ExperienceCard {...experience} href="/experiences" />
+              <ExperienceCard {...experience} href={`/experiences/${experience.slug}`} />
             </FadeIn>
           ))}
         </div>
+        {!approvedExperiences.length ? (
+          <p className="mt-6 text-sm text-muted-foreground">
+            New experiences appear here after both guide and experience review are complete.
+          </p>
+        ) : null}
       </Container>
     </Section>
   );
 }
 
 {/* Meet Local Guides */}
-function TopGuidesSection() {
+function TopGuidesSection({ guides }: { guides: Awaited<ReturnType<typeof getApprovedGuideProfiles>> }) {
   return (
     <Section spacing="spacious">
       <Container>
@@ -464,11 +482,16 @@ function TopGuidesSection() {
 
         <div className="grid gap-6 md:grid-cols-3">
           {guides.slice(0, 3).map((guide, index) => (
-            <FadeIn key={guide.slug} transition={{ delay: index * 0.08 }}>
-              <GuideCard href="/guides" {...guide} />
+            <FadeIn key={guide.name} transition={{ delay: index * 0.08 }}>
+              <GuideCard {...guide} />
             </FadeIn>
           ))}
         </div>
+        {!guides.length ? (
+          <p className="mt-6 text-sm text-muted-foreground">
+            Guide profiles appear after the Nomsa team completes its review.
+          </p>
+        ) : null}
       </Container>
     </Section>
   );
@@ -633,14 +656,19 @@ function HomeNewsletterSection() {
   );
 }
 
-export function HomePage() {
+export async function HomePage() {
+  await connection();
+  const [approvedExperiences, approvedGuides] = await Promise.all([
+    getApprovedExperiences(),
+    getApprovedGuideProfiles(),
+  ]);
   return (
     <>
-      <HomeHero />
-      <PopularDestinationsSection />
+      <HomeHero guideCount={approvedGuides.length} experienceCount={approvedExperiences.length} />
+      <PopularDestinationsSection approvedExperiences={approvedExperiences} />
       <EditorialStorytellingBreak />
-      <FeaturedExperiencesSection />
-      <TopGuidesSection />
+      <FeaturedExperiencesSection approvedExperiences={approvedExperiences} />
+      <TopGuidesSection guides={approvedGuides} />
       <TravelCategoriesSection />
       <TrustPillarsSection />
       <HowItWorksSection />

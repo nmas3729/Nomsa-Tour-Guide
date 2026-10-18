@@ -191,7 +191,7 @@ describe("BookingConfirmationView", () => {
     expect(screen.getByText("Experience details not available")).toBeInTheDocument();
     expect(screen.getByText("Destination and province not listed")).toBeInTheDocument();
     expect(screen.getAllByText("Not listed").length).toBeGreaterThan(0);
-    expect(screen.getByText("Cancellation terms are not included in the booking details provided here.")).toBeInTheDocument();
+    expect(screen.getByText("Cancellation terms were not recorded for this older booking.")).toBeInTheDocument();
   });
 
   it("does not offer a nonexistent PDF, invoice, voucher, or receipt", async () => {
@@ -202,7 +202,7 @@ describe("BookingConfirmationView", () => {
     await screen.findByRole("heading", { name: "Your experience is confirmed" });
     expect(screen.queryByRole("button", { name: /download|pdf|invoice|voucher|receipt/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/VAT receipt|travel voucher|generated and downloaded/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/Cancellation terms are not included/)).toBeInTheDocument();
+    expect(screen.getByText(/Cancellation terms were not recorded for this older booking/)).toBeInTheDocument();
   });
 
   it("shows PDF availability and clearly reports failed email delivery for a paid booking", async () => {
@@ -215,10 +215,10 @@ describe("BookingConfirmationView", () => {
 
     render(<BookingConfirmationView />);
 
-    const invoice = await screen.findByRole("region", { name: "Invoice" });
-    expect(invoice).toHaveTextContent("Invoice PDF available");
-    expect(invoice).toHaveTextContent("Invoice email delivery failed. You can download the PDF here.");
-    expect(screen.getByRole("link", { name: "Download PDF" })).toHaveAttribute(
+    const receipt = await screen.findByRole("region", { name: "Payment receipt" });
+    expect(receipt).toHaveTextContent("Receipt PDF available");
+    expect(receipt).toHaveTextContent("Receipt email delivery failed. You can download the PDF here.");
+    expect(screen.getByRole("link", { name: "Download receipt" })).toHaveAttribute(
       "href",
       "/api/bookings/booking-id/invoice",
     );
@@ -283,6 +283,8 @@ function paymentStateText(status: BookingRecordSummary["paymentStatus"]): string
     PENDING: "Payment pending",
     PROCESSING: "Payment processing",
     SUCCEEDED: "Payment succeeded",
+    PARTIALLY_REFUNDED: "Partially refunded",
+    DISPUTED: "Payment disputed",
     FAILED: "Payment failed",
     CANCELLED: "Payment cancelled",
     REFUND_PENDING: "Refund pending",

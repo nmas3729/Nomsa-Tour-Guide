@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { cookies } from "next/headers";
+import { getCurrentUser } from "@/src/lib/auth/session";
 import type { BookingRecordSummary } from "@/src/server/services/booking-service";
 import { getBookingConfirmation } from "@/src/server/services/booking-service";
 import { GET } from "./route";
@@ -7,12 +8,16 @@ import { GET } from "./route";
 vi.mock("next/headers", () => ({
   cookies: vi.fn(),
 }));
+vi.mock("@/src/lib/auth/session", () => ({
+  getCurrentUser: vi.fn(),
+}));
 vi.mock("@/src/server/services/booking-service", () => ({
   getBookingConfirmation: vi.fn(),
 }));
 
 const bookingId = "e3b7f36e-e2d8-4859-aee0-4afc9216c46c";
 const cookiesMock = vi.mocked(cookies);
+const userMock = vi.mocked(getCurrentUser);
 const bookingMock = vi.mocked(getBookingConfirmation);
 const paidBooking: BookingRecordSummary = {
   id: bookingId,
@@ -43,6 +48,7 @@ beforeEach(() => {
   cookiesMock.mockResolvedValue({
     get: () => ({ value: "booking-access-key" }),
   } as never);
+  userMock.mockResolvedValue(null);
   bookingMock.mockResolvedValue(paidBooking);
 });
 
@@ -54,9 +60,28 @@ describe("GET /api/bookings/[id]/invoice", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toBe("application/pdf");
-    expect(response.headers.get("content-disposition")).toContain("invoice-NOM-ABC123.pdf");
+    expect(response.headers.get("content-disposition")).toContain("receipt-NOM-ABC123.pdf");
     expect((await response.arrayBuffer()).byteLength).toBeGreaterThan(100);
-    expect(bookingMock).toHaveBeenCalledWith(bookingId, "booking-access-key");
+    expect(bookingMock).toHaveBeenCalledWith(bookingId, "booking-access-key", undefined);
+  });
+
+  it("allows the authenticated booking customer to download a receipt without the guest cookie", async () => {
+    cookiesMock.mockResolvedValue({ get: () => undefined } as never);
+    userMock.mockResolvedValue({
+      id: "customer-id",
+      email: "alex@example.com",
+      name: "Alex Traveller",
+      role: "CUSTOMER",
+      sessionVersion: 1,
+      mfaVerified: false,
+    });
+
+    const response = await GET(new Request("http://localhost"), {
+      params: Promise.resolve({ id: bookingId }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(bookingMock).toHaveBeenCalledWith(bookingId, undefined, "customer-id");
   });
 
   it("does not generate a PDF for an unpaid booking", async () => {
@@ -73,7 +98,7 @@ describe("GET /api/bookings/[id]/invoice", () => {
 
     expect(response.status).toBe(409);
     expect(await response.json()).toEqual({
-      error: "An invoice is available only for an approved payment.",
+      error: "A receipt is available only for a payment recorded as received.",
     });
   });
 

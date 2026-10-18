@@ -49,6 +49,8 @@ describe("booking and payment state presentation", () => {
     ["PENDING", "Payment pending"],
     ["PROCESSING", "Payment processing"],
     ["SUCCEEDED", "Payment succeeded"],
+    ["PARTIALLY_REFUNDED", "Partially refunded"],
+    ["DISPUTED", "Payment disputed"],
     ["FAILED", "Payment failed"],
     ["CANCELLED", "Payment cancelled"],
     ["REFUNDED", "Payment refunded"],
@@ -76,6 +78,8 @@ describe("booking and payment state presentation", () => {
     ["CANCELLED", "Payment was cancelled"],
     ["REFUND_PENDING", "Payment update"],
     ["REFUNDED", "Payment update"],
+    ["PARTIALLY_REFUNDED", "Partial refund recorded"],
+    ["DISPUTED", "Payment disputed"],
   ] as const)("keeps %s payment wording accurate", (paymentStatus, title) => {
     expect(confirmationMessage(booking({ paymentStatus })).title).toBe(title);
   });
@@ -86,7 +90,7 @@ describe("booking and payment state presentation", () => {
     expect(isPaymentRecordedForBooking(booking({ status: "CONFIRMED", paymentStatus: "PENDING" }))).toBe(false);
   });
 
-  it("makes invoices available only for approved bookings with a persisted payment date", () => {
+  it("makes receipts available for recorded payments with a persisted payment date", () => {
     expect(isInvoiceAvailable(booking({
       status: "CONFIRMED",
       paymentStatus: "SUCCEEDED",
@@ -101,7 +105,17 @@ describe("booking and payment state presentation", () => {
       status: "REFUND_REQUESTED",
       paymentStatus: "REFUND_PENDING",
       paidAt: "2026-10-17T08:12:00.000Z",
-    }))).toBe(false);
+    }))).toBe(true);
+    expect(isInvoiceAvailable(booking({
+      status: "COMPLETED",
+      paymentStatus: "PARTIALLY_REFUNDED",
+      paidAt: "2026-10-17T08:12:00.000Z",
+    }))).toBe(true);
+    expect(isInvoiceAvailable(booking({
+      status: "CONFIRMED",
+      paymentStatus: "DISPUTED",
+      paidAt: "2026-10-17T08:12:00.000Z",
+    }))).toBe(true);
   });
 
   it("describes a requested refund as pending, not completed", () => {

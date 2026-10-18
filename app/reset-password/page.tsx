@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { connection } from "next/server";
 import { AuthShell } from "@/src/features/auth/components/auth-ui";
 import { ResetPasswordForm } from "@/src/features/auth/components/auth-forms";
 
@@ -11,15 +11,20 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-async function ResetPasswordContent({
+export default async function ResetPasswordPage({
   searchParams,
 }: {
   searchParams: Promise<{ token?: string }>;
 }) {
+  await connection();
   const { token } = await searchParams;
 
   return (
-    <>
+    <AuthShell
+      eyebrow="ACCOUNT RECOVERY"
+      title="Choose a new password."
+      description="Use a strong password you have not used for this account before."
+    >
       {token ? (
         <ResetPasswordForm token={token} />
       ) : (
@@ -27,24 +32,6 @@ async function ResetPasswordContent({
           This reset link is missing or invalid. <Link href="/forgot-password">Request another link</Link>.
         </p>
       )}
-    </>
-  );
-}
-
-export default function ResetPasswordPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ token?: string }>;
-}) {
-  return (
-    <AuthShell
-      eyebrow="ACCOUNT RECOVERY"
-      title="Choose a new password."
-      description="Use a strong password you have not used for this account before."
-    >
-      <Suspense fallback={<p className="auth-description">Preparing password reset…</p>}>
-        <ResetPasswordContent searchParams={searchParams} />
-      </Suspense>
     </AuthShell>
   );
 }

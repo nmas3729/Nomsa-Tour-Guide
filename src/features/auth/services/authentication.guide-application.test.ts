@@ -97,14 +97,14 @@ beforeEach(() => {
 });
 
 describe("guide application registration", () => {
-  it("persists pending status and notifies the review inbox without publishing", async () => {
+  it("persists a private draft and waits for onboarding submission before notifying reviewers", async () => {
     const result = await registerAccount(guideRegistration);
 
     expect(result).toMatchObject({
       success: true,
       message: expect.stringContaining("manual review"),
     });
-    expect(guideEmailMock).toHaveBeenCalledWith(guideRegistration);
+    expect(guideEmailMock).not.toHaveBeenCalled();
     expect(verificationEmailMock).toHaveBeenCalledWith(
       guideRegistration.name,
       guideRegistration.email,
@@ -113,26 +113,25 @@ describe("guide application registration", () => {
     expect(createdUserData).toMatchObject({
       isActive: false,
       guideProfile: {
-        create: { verificationStatus: GuideApplicationStatus.PENDING },
+        create: { verificationStatus: GuideApplicationStatus.DRAFT },
       },
       guideApplications: {
-        create: { status: GuideApplicationStatus.PENDING },
+        create: { status: GuideApplicationStatus.DRAFT },
       },
     });
   });
 
-  it("keeps the application pending and does not claim inbox delivery when notification fails", async () => {
-    mocks.sendGuideApplicationReviewEmail.mockRejectedValue(new Error("Inbox unavailable"));
-
+  it("does not notify the review inbox when only saving a draft", async () => {
     const result = await registerAccount(guideRegistration);
 
     expect(result).toMatchObject({
       success: true,
-      message: expect.stringContaining("delivery to the review inbox could not be confirmed"),
+      message: expect.stringContaining("private draft"),
     });
+    expect(guideEmailMock).not.toHaveBeenCalled();
     expect(createdUserData).toMatchObject({
       guideApplications: {
-        create: { status: GuideApplicationStatus.PENDING },
+        create: { status: GuideApplicationStatus.DRAFT },
       },
     });
   });

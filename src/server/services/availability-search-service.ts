@@ -1,6 +1,6 @@
 import "server-only";
 
-import { ExperienceStatus } from "@/src/server/db/generated/enums";
+import { ExperienceStatus, GuideApplicationStatus } from "@/src/server/db/generated/enums";
 import { getPrismaClient } from "@/src/server/db/prisma";
 
 const BOOKING_TIME_SLOTS = ["09:00 AM", "02:00 PM"] as const;
@@ -47,8 +47,18 @@ export async function findAvailableExperienceSlugs(date: string, requiredGuests:
       experience: {
         is: {
           status: ExperienceStatus.PUBLISHED,
+          verificationStatus: GuideApplicationStatus.APPROVED,
           deletedAt: null,
+          minGuests: { lte: requiredGuests },
+          maxGuests: { gte: requiredGuests },
           currency: "ZAR",
+          guide: {
+            is: {
+              verificationStatus: GuideApplicationStatus.APPROVED,
+              deletedAt: null,
+              user: { is: { isActive: true, deletedAt: null } },
+            },
+          },
         },
       },
     },

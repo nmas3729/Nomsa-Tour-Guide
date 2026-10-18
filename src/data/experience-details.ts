@@ -41,13 +41,23 @@ export interface ExperienceDetailData {
   reviews: Array<{
     id: string;
     name: string;
-    country: string;
+    country?: string;
     avatar?: string;
     rating: number;
     date: string;
     comment: string;
-    helpfulCount: number;
+    helpfulCount?: number;
   }>;
+  guideProfile?: {
+    name: string;
+    location: string;
+    biography: string;
+    image?: string;
+    rating: number;
+    yearsExperience: number;
+    specialties: string[];
+    languages: string[];
+  };
 }
 
 export const detailedExperiences: Record<string, ExperienceDetailData> = {

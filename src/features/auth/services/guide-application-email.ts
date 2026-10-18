@@ -2,11 +2,18 @@ import "server-only";
 
 import { Resend } from "resend";
 import { requireGuideApplicationEmailEnvironment } from "@/src/config/env";
-import type { GuideRegistrationInput } from "@/src/features/auth/schemas";
+import type { GuideApplicationStatus } from "@/src/server/db/generated/enums";
 
-export async function sendGuideApplicationReviewEmail(
-  application: GuideRegistrationInput,
-): Promise<void> {
+export type GuideApplicationReviewDetails = {
+  name: string;
+  email: string;
+  phone: string;
+  applicationId: string;
+  serviceTitle: string;
+  status: GuideApplicationStatus;
+};
+
+export async function sendGuideApplicationReviewEmail(application: GuideApplicationReviewDetails): Promise<void> {
   const {
     RESEND_API_KEY,
     GUIDE_APPLICATION_FROM_EMAIL,
@@ -17,18 +24,11 @@ export async function sendGuideApplicationReviewEmail(
     `Name: ${application.name}`,
     `Email: ${application.email}`,
     `Phone: ${application.phone}`,
-    `Years of guiding experience: ${application.yearsExperience}`,
-    `Business name: ${application.businessName || "Not provided"}`,
-    `Business registration: ${application.businessRegistration || "Not provided"}`,
-    `Specialities: ${application.specialties || "Not provided"}`,
-    `Languages: ${application.languages || "Not provided"}`,
-    `Operating areas: ${application.operatingAreas || "Not provided"}`,
+    `Proposed experience: ${application.serviceTitle}`,
     "",
-    "Biography:",
-    application.biography,
-    "",
-    "Application status: PENDING",
-    "Review and any approval or publication decision must be made manually.",
+    `Application reference: ${application.applicationId}`,
+    `Application status: ${application.status}`,
+    "Review the full profile, proposed service, and protected documents in the admin dashboard.",
   ];
   const { error } = await resend.emails.send({
     from: GUIDE_APPLICATION_FROM_EMAIL,

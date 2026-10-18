@@ -93,6 +93,23 @@ describe("BookingCard", () => {
     expect(screen.queryByText("Destination not recorded for this booking.")).not.toBeInTheDocument();
   });
 
+  it("shows a persisted partial refund amount separately from the booking total", () => {
+    render(
+      <BookingCard
+        booking={{
+          ...baseBooking,
+          status: "CONFIRMED",
+          paymentStatus: "PARTIALLY_REFUNDED",
+          payments: [{ refundedAmount: "125.50" }],
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Payment · Partially refunded")).toBeInTheDocument();
+    expect(screen.getByText(/Refund recorded ·/)).toHaveTextContent("125,50");
+    expect(screen.getByText(/1[\s\u00a0]300,00/)).toBeInTheDocument();
+  });
+
   it("states honestly when no destination is recorded instead of inventing one", () => {
     render(<BookingCard booking={{ ...baseBooking, status: "CONFIRMED", paymentStatus: "SUCCEEDED" }} />);
 

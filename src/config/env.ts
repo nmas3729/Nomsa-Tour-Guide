@@ -6,6 +6,7 @@ const environmentSchema = z.object({
   DATABASE_URL: z.string().url().optional(),
   AUTH_SECRET: z.string().min(32).optional(),
   MFA_ENCRYPTION_KEY: z.string().min(32).optional(),
+  GUIDE_DATA_ENCRYPTION_KEY: z.string().min(32).optional(),
   AUTH_URL: z.string().url().optional(),
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
   NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
@@ -28,6 +29,13 @@ const environmentSchema = z.object({
 });
 
 export type ServerEnvironment = z.infer<typeof environmentSchema>;
+
+export function getPayoutEnvironment() {
+  return {
+    NOMSA_PLATFORM_COMMISSION_RATE: process.env.NOMSA_PLATFORM_COMMISSION_RATE || undefined,
+    PAYOUT_DISPUTE_WINDOW_DAYS: process.env.PAYOUT_DISPUTE_WINDOW_DAYS || undefined,
+  };
+}
 
 export function getServerEnvironment(): ServerEnvironment {
   const result = environmentSchema.safeParse(process.env);
@@ -69,6 +77,14 @@ export function requireMfaEncryptionKey(): string {
   const key = getServerEnvironment().MFA_ENCRYPTION_KEY;
   if (!key) {
     throw new Error("MFA_ENCRYPTION_KEY must be configured to manage authenticator secrets.");
+  }
+  return key;
+}
+
+export function requireGuideDataEncryptionKey(): string {
+  const key = getServerEnvironment().GUIDE_DATA_ENCRYPTION_KEY;
+  if (!key) {
+    throw new Error("GUIDE_DATA_ENCRYPTION_KEY must be configured to store guide onboarding data.");
   }
   return key;
 }

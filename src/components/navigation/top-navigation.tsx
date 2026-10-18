@@ -48,6 +48,7 @@ function MobileNavigation({
   const [isOpen, setIsOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  const dialogId = useId();
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -69,6 +70,8 @@ function MobileNavigation({
     <>
       <Button
         aria-label="Open navigation menu"
+        aria-controls={dialogId}
+        aria-expanded={isOpen}
         className={cn(
           "xl:hidden",
           isTransparent && "border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white",
@@ -83,6 +86,7 @@ function MobileNavigation({
       <dialog
         aria-labelledby={titleId}
         className="mobile-navigation-dialog fixed inset-x-0 bottom-0 z-50 m-0 max-h-[90dvh] w-full max-w-none overflow-y-auto rounded-t-3xl border border-border bg-card p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-foreground shadow-xl focus:outline-none xl:hidden"
+        id={dialogId}
         onCancel={(event) => {
           event.preventDefault();
           closeMenu();
@@ -107,7 +111,7 @@ function MobileNavigation({
           </h2>
           <button
             aria-label="Close navigation menu"
-            className="rounded-full p-2 text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="grid size-11 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             onClick={closeMenu}
             type="button"
           >

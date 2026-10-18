@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { connection } from "next/server";
 import {
   ArrowLeft,
   ArrowRight,
@@ -7,7 +8,6 @@ import {
   Clock3,
   Compass,
   HeartHandshake,
-  Mail,
   MapPin,
   ShieldCheck,
   Sparkles,
@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Card, CardContent } from "@/src/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
 import { ExperienceCard } from "@/src/components/cards/experience-card";
 import { GuideCard } from "@/src/components/cards/guide-card";
 import { DestinationCard } from "@/src/components/cards/destination-card";
@@ -24,7 +23,10 @@ import { Container } from "@/src/components/layout/container";
 import { Section } from "@/src/components/layout/section";
 import { PublicPageIntro } from "./public-layout";
 import { ContactForm } from "./marketing-forms";
-import { categories, destinations, experiences, guides, provinces } from "@/src/data/public-site";
+import { ContactEmailLink } from "./contact-email-link";
+import { categories, destinations, provinces } from "@/src/data/public-site";
+import { getApprovedExperiences } from "@/src/server/services/public-verification-service";
+import { getApprovedGuideProfiles } from "@/src/server/services/public-verification-service";
 
 const values = [
   {
@@ -90,17 +92,13 @@ export function AboutPage() {
           <Card className="overflow-hidden border-border/70 shadow-none">
             <CardContent className="grid p-0 md:grid-cols-[0.8fr_1.2fr]">
               <div className="relative aspect-[4/5] min-h-[320px] overflow-hidden bg-secondary sm:min-h-[420px]">
-                <Avatar className="size-full rounded-none bg-secondary">
-                  <AvatarImage
-                    alt="Nomsa Bambisa, Head of Nomsa Tour Guides"
-                    className="object-cover object-top"
-                    src="/images/nomsa.png"
-                  />
-                  <AvatarFallback className="rounded-none text-5xl font-semibold text-primary">
-                    NB
-                  </AvatarFallback>
-                </Avatar>
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-primary/30 via-transparent to-transparent" />
+                <Image
+                  alt="Nomsa Bambisa, Head of Nomsa Tour Guides"
+                  className="object-cover object-top"
+                  fill
+                  sizes="(max-width: 768px) calc(100vw - 2rem), 40vw"
+                  src="/images/nomsa.png"
+                />
               </div>
               <div className="flex flex-col justify-center p-6 sm:p-10 lg:p-14">
                 <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-primary">
@@ -223,15 +221,7 @@ export function ContactPage() {
               <Card className="shadow-none">
                 <CardContent className="grid gap-5 p-6 sm:p-8">
                   <h2 className="font-display text-2xl font-semibold">Contact Information</h2>
-                  <a className="flex items-start gap-4 text-foreground no-underline" href="mailto:hello@nomsatourguides.co.za">
-                    <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                      <Mail aria-hidden="true" size={19} />
-                    </span>
-                    <span>
-                      <span className="block text-sm font-semibold">Email our team</span>
-                      <span className="mt-1 block text-sm text-muted-foreground">hello@nomsatourguides.co.za</span>
-                    </span>
-                  </a>
+                  <ContactEmailLink />
                   <div className="flex items-start gap-4">
                     <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
                       <Clock3 aria-hidden="true" size={19} />
@@ -324,7 +314,9 @@ export function DestinationsPage() {
   );
 }
 
-export function GuidesPage() {
+export async function GuidesPage() {
+  await connection();
+  const guides = await getApprovedGuideProfiles();
   return (
     <>
       <Section className="pb-8 sm:pb-12">
@@ -340,24 +332,16 @@ export function GuidesPage() {
         <Container>
           <div className="mb-7 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm font-medium text-foreground">
-              {guides.length} guide profiles
+              {guides.length} approved guide profiles
             </p>
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {guides.map((guide) => (
-              <GuideCard
-                key={guide.slug}
-                {...guide}
-                experiences={experiences
-                  .filter((experience) => experience.guide.name === guide.name)
-                  .map((experience) => ({
-                    title: experience.title,
-                    href: `/experiences/${experience.slug}`,
-                    destination: [experience.destination, ...experience.provinces].filter(Boolean).join(" · "),
-                  }))}
-              />
-            ))}
+            {guides.length ? guides.map((guide) => <GuideCard key={guide.name} {...guide} />) : (
+              <p className="col-span-full rounded-2xl border border-border/60 bg-card p-6 text-sm text-muted-foreground">
+                Guide profiles will appear here after the Nomsa team approves and publishes them.
+              </p>
+            )}
           </div>
 
           <div className="mt-12 rounded-3xl bg-secondary/60 px-6 py-10 text-center sm:px-10">
@@ -379,7 +363,9 @@ export function GuidesPage() {
   );
 }
 
-export function ExperiencesPage() {
+export async function ExperiencesPage() {
+  await connection();
+  const experiences = await getApprovedExperiences();
   return (
     <>
       <Section className="pb-8 sm:pb-12">
@@ -464,7 +450,11 @@ export function ExperiencesPage() {
           {/* Responsive Experience Grid */}
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {experiences.map((experience) => (
-              <ExperienceCard key={experience.slug} {...experience} />
+              <ExperienceCard
+                href={`/experiences/${experience.slug}`}
+                key={experience.slug}
+                {...experience}
+              />
             ))}
           </div>
         </Container>

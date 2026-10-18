@@ -185,27 +185,27 @@ export function BookingConfirmationView() {
 
               {invoiceAvailable ? (
                 <section
-                  aria-label="Invoice"
+                  aria-label="Payment receipt"
                   className="mt-5 flex flex-col gap-4 rounded-2xl border border-border/60 bg-secondary/40 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
                 >
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                      Invoice
+                      Payment receipt
                     </p>
-                    <p className="mt-1.5 text-sm font-semibold text-foreground">Invoice PDF available</p>
+                    <p className="mt-1.5 text-sm font-semibold text-foreground">Receipt PDF available</p>
                     <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                       {booking.invoiceEmailStatus === "SENT"
-                        ? `Invoice emailed to ${booking.leadEmail || "the booking email address"}.`
+                          ? `Receipt emailed to ${booking.leadEmail || "the booking email address"}.`
                         : booking.invoiceEmailStatus === "FAILED"
-                          ? "Invoice email delivery failed. You can download the PDF here."
+                            ? "Receipt email delivery failed. You can download the PDF here."
                           : booking.invoiceEmailStatus === "SENDING"
-                            ? "Invoice email delivery is in progress."
+                              ? "Receipt email delivery is in progress."
                             : "Email delivery has not been confirmed. You can download the PDF here."}
                     </p>
                   </div>
                   <Button asChild className="shrink-0 rounded-full">
                     <a download href={`/api/bookings/${booking.id}/invoice`}>
-                      Download PDF
+                      Download receipt
                       <Download aria-hidden="true" className="size-4" />
                     </a>
                   </Button>
@@ -258,10 +258,83 @@ export function BookingConfirmationView() {
                     {Number.isFinite(booking.totalPrice) ? formatCurrency(booking.totalPrice, booking.currency || "ZAR") : "Not listed"}
                   </dd>
                   <dd className="mt-0.5 text-xs text-muted-foreground">
-                    {booking.paymentStatus === "SUCCEEDED" ? "Payment recorded as successful" : paymentStatusLabel(booking.paymentStatus)}
+                    {paymentStatusLabel(booking.paymentStatus)}
                   </dd>
                 </div>
               </dl>
+
+              <section aria-label="Booking price breakdown" className="mt-6 rounded-2xl border border-border/60 bg-secondary/30 p-4 sm:p-5">
+                <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">Price breakdown</h2>
+                {booking.baseAmount == null ? (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    A detailed price breakdown was not recorded for this older booking. Recorded total:{" "}
+                    {formatCurrency(booking.totalPrice, booking.currency || "ZAR")}.
+                  </p>
+                ) : (
+                  <dl className="mt-3 space-y-2 text-sm">
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">Base price</dt>
+                      <dd>{formatCurrency(booking.baseAmount, booking.currency || "ZAR")}</dd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">Optional extras</dt>
+                      <dd>{formatCurrency(booking.optionalExtrasAmount ?? 0, booking.currency || "ZAR")}</dd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">Transport</dt>
+                      <dd>{formatCurrency(booking.transportAmount ?? 0, booking.currency || "ZAR")}</dd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">Platform fee</dt>
+                      <dd>{formatCurrency(booking.platformFeeAmount ?? 0, booking.currency || "ZAR")}</dd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-muted-foreground">Taxes</dt>
+                      <dd>{formatCurrency(booking.taxAmount ?? 0, booking.currency || "ZAR")}</dd>
+                    </div>
+                    <div className="flex justify-between gap-4 border-t border-border/60 pt-2 font-semibold">
+                      <dt>Total payable</dt>
+                      <dd>{formatCurrency(booking.totalPrice, booking.currency || "ZAR")}</dd>
+                    </div>
+                    {(booking.refundedAmount ?? 0) > 0 ? (
+                      <div className="flex justify-between gap-4 text-muted-foreground">
+                        <dt>Refund recorded</dt>
+                        <dd>{formatCurrency(booking.refundedAmount ?? 0, booking.currency || "ZAR")}</dd>
+                      </div>
+                    ) : null}
+                  </dl>
+                )}
+              </section>
+              {booking.agreedTermsSnapshot ? (
+                <section aria-label="Accepted itinerary offer" className="mt-5 rounded-2xl border border-border/60 bg-card p-4 sm:p-5">
+                  <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">Accepted itinerary offer</h2>
+                  <p className="mt-3 text-sm font-semibold">{booking.agreedTermsSnapshot.experienceTitle}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {booking.agreedTermsSnapshot.destination} · {booking.agreedTermsSnapshot.durationMinutes} minutes
+                  </p>
+                  {booking.agreedTermsSnapshot.meetingPoint ? (
+                    <p className="mt-2 text-sm"><span className="font-medium">Meeting point:</span> {booking.agreedTermsSnapshot.meetingPoint}</p>
+                  ) : null}
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <p className="text-xs font-semibold">Included</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {booking.agreedTermsSnapshot.inclusions.length
+                          ? booking.agreedTermsSnapshot.inclusions.join(", ")
+                          : "No inclusions listed"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold">Not included</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {booking.agreedTermsSnapshot.exclusions.length
+                          ? booking.agreedTermsSnapshot.exclusions.join(", ")
+                          : "No exclusions listed"}
+                      </p>
+                    </div>
+                  </div>
+                </section>
+              ) : null}
             </div>
 
             <div className="mt-6 grid gap-4 lg:grid-cols-2">
@@ -270,15 +343,32 @@ export function BookingConfirmationView() {
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                   {paymentRecordedForBooking
                     ? "Keep your booking reference for your records. Visit the experience page to review the meeting point and itinerary details listed for this outing."
+                    : booking.paymentStatus === "DISPUTED"
+                      ? `Booking status remains ${bookingStatusLabel(booking.status)}. Payment is disputed and is not treated as cleared for guide payout.`
+                      : booking.paymentStatus === "PARTIALLY_REFUNDED"
+                        ? `Booking status remains ${bookingStatusLabel(booking.status)}. The recorded refund is shown in the price breakdown above.`
                     : booking.paymentStatus === "PENDING" || booking.paymentStatus === "PROCESSING"
                       ? "The latest recorded payment is still pending. This page reflects the current booking status and does not confirm payment."
                       : booking.paymentStatus === "REFUND_PENDING" || booking.paymentStatus === "REFUNDED"
                         ? "The booking and payment statuses above reflect the latest details available here. Contact Nomsa with your reference if you need help understanding this payment update."
                         : "This booking is not confirmed. Check the current payment status before making another booking."}
                 </p>
-                <p className="mt-3 border-t border-border/50 pt-3 text-xs leading-relaxed text-muted-foreground">
-                  Cancellation terms are not included in the booking details provided here.
-                </p>
+                <div className="mt-3 border-t border-border/50 pt-3">
+                  <h3 className="text-xs font-semibold text-foreground">Cancellation terms saved at booking</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    {booking.cancellationPolicySnapshot || "Cancellation terms were not recorded for this older booking."}
+                  </p>
+                </div>
+                {booking.bookingType === "REQUEST_TO_BOOK" && booking.customRequestId ? (
+                  <div className="mt-3 border-t border-border/50 pt-3">
+                    <Link
+                      className="text-xs font-semibold text-primary underline-offset-4 hover:underline"
+                      href="/dashboard#custom-itinerary-requests"
+                    >
+                      Open itinerary messages in your dashboard
+                    </Link>
+                  </div>
+                ) : null}
               </section>
 
               <div className="flex flex-col justify-center gap-3 rounded-2xl bg-secondary/45 p-5">
@@ -290,6 +380,9 @@ export function BookingConfirmationView() {
                 </Button>
                 <Button asChild className="min-h-12 rounded-full" variant="outline">
                   <Link href="/experiences">Explore more South African experiences</Link>
+                </Button>
+                <Button asChild className="min-h-12 rounded-full" variant="outline">
+                  <Link href="/contact">Contact Nomsa support</Link>
                 </Button>
                 {booking.paymentStatus === "FAILED" || booking.paymentStatus === "CANCELLED" ? (
                   <Link

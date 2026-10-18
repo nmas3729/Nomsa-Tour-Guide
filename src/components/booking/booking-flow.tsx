@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -21,25 +21,33 @@ import type { ExperienceDetailData } from "@/src/data/experience-details";
 import { cn } from "@/src/lib/utils";
 
 const availableTimeSlots = [
-  { id: "morning", time: "09:00 AM – 11:30 AM", label: "Morning Light", spotsLeft: 6 },
-  { id: "afternoon", time: "02:00 PM – 04:30 PM", label: "Golden Afternoon", spotsLeft: 4 },
+  { id: "morning", time: "09:00 AM – 11:30 AM", label: "Morning Light" },
+  { id: "afternoon", time: "02:00 PM – 04:30 PM", label: "Golden Afternoon" },
 ];
 
 export function BookingFlow({
   experience,
   minimumBookingDate,
+  initialDate,
+  initialGuestCount,
+  searchQuery,
 }: {
   experience: ExperienceDetailData;
   minimumBookingDate: string;
+  initialDate: string;
+  initialGuestCount: number;
+  searchQuery: string;
 }) {
   const idempotencyKey = useRef<string | null>(null);
+  const dateFormRef = useRef<HTMLFormElement>(null);
+  const travellerFormRef = useRef<HTMLFormElement>(null);
   // Step state (1: Date & Time, 2: Travellers, 3: Review, 4: Payment, 5: Success)
   const [currentStep, setCurrentStep] = useState<number>(1);
 
   // Step 1 State: Dates & Time & Guests
-  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<string>(initialDate);
   const [selectedSlot, setSelectedSlot] = useState<string>("morning");
-  const [adultsCount, setAdultsCount] = useState<number>(2);
+  const [adultsCount, setAdultsCount] = useState<number>(initialGuestCount);
   const [childrenCount, setChildrenCount] = useState<number>(0);
 
   // Step 2 State: Traveller Details
@@ -57,14 +65,24 @@ export function BookingFlow({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [payfastError, setPayfastError] = useState("");
 
-  const guide = experience.guideSlug ? guides.find((candidate) => candidate.slug === experience.guideSlug) : undefined;
+  const guide = experience.guideProfile ??
+    (experience.guideSlug ? guides.find((candidate) => candidate.slug === experience.guideSlug) : undefined);
   const totalGuests = adultsCount + childrenCount;
 
-  // Calculation Breakdown
   const baseRate = experience.price * totalGuests;
-  const additionalGuestFee = 120 * totalGuests;
-  const platformDiscount = totalGuests >= 4 ? 250 : 0;
-  const grandTotal = baseRate + additionalGuestFee - platformDiscount;
+  const grandTotal = baseRate;
+  const cancellationTerms =
+    experience.cancellationPolicy || "No cancellation policy was provided for this experience.";
+
+  function continueFromDate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setCurrentStep(2);
+  }
+
+  function continueFromTravellerDetails(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setCurrentStep(3);
+  }
 
   async function handlePayFastCheckout() {
     setIsSubmitting(true);
@@ -103,10 +121,13 @@ export function BookingFlow({
       });
 
       if (!res.ok) {
+        const result = await res.json();
         if (res.status < 500) {
           idempotencyKey.current = null;
         }
-        throw new Error("Failed to initialize booking session.");
+        throw new Error(
+          typeof result.error === "string" ? result.error : "Booking could not be created. Please try again.",
+        );
       }
 
       const data = await res.json();
@@ -141,7 +162,7 @@ export function BookingFlow({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Link
               className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
-              href={`/experiences/${experience.slug}`}
+              href={`/experiences/${experience.slug}${searchQuery ? `?${searchQuery}` : ""}`}
             >
               <ArrowLeft size={15} />
               <span>Back to experience</span>
@@ -157,14 +178,17 @@ export function BookingFlow({
               ].map((s) => (
                 <div className="flex items-center gap-2" key={s.step}>
                   <button
+                    aria-current={currentStep === s.step ? "step" : undefined}
+                    aria-label={`Step ${s.step}: ${s.title}`}
                     className={cn(
-                      "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs transition-colors",
+                      "flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full px-3 py-1 text-xs transition-colors",
                       currentStep === s.step
                         ? "bg-primary text-white font-bold"
                         : currentStep > s.step
                           ? "bg-primary/10 text-primary font-semibold"
                           : "text-muted-foreground",
                     )}
+                    disabled={s.step >= currentStep}
                     onClick={() => {
                       if (s.step < currentStep) setCurrentStep(s.step);
                     }}
@@ -189,7 +213,7 @@ export function BookingFlow({
             <div className="space-y-8 lg:col-span-7">
               {/* STEP 1: Date, Time & Guests */}
               {currentStep === 1 && (
-                <div className="space-y-8">
+                <form className="space-y-8" method="post" onSubmit={continueFromDate} ref={dateFormRef}>
                   <div>
                     <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Step 1 of 4</span>
                     <h1 className="mt-2 font-display text-3xl font-medium tracking-tight sm:text-4xl">
@@ -223,31 +247,33 @@ export function BookingFlow({
                     {/* Time Slot Selection */}
                     <div className="mt-6">
                       <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-3">
-                        Available Departures for {selectedDate}
+                        Departure times for {selectedDate}
                       </span>
+                      <p className="mb-3 text-xs text-muted-foreground">
+                        Live capacity is checked when you continue to booking.
+                      </p>
                       <div className="grid gap-3 sm:grid-cols-2">
                         {availableTimeSlots.map((slot) => (
-                          <div
+                          <button
+                            aria-pressed={selectedSlot === slot.id}
                             className={cn(
-                              "relative cursor-pointer rounded-2xl border p-4 transition-all",
+                              "relative rounded-2xl border p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                               selectedSlot === slot.id
                                 ? "border-primary bg-primary/5 ring-2 ring-primary/20"
                                 : "border-border/80 bg-background hover:border-primary/40",
                             )}
                             key={slot.id}
                             onClick={() => setSelectedSlot(slot.id)}
+                            type="button"
                           >
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-bold text-primary">{slot.label}</span>
-                              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-foreground">
-                                {slot.spotsLeft} spots left
-                              </span>
                             </div>
                             <p className="mt-2 font-display text-base font-semibold">{slot.time}</p>
                             <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                               <MapPin size={11} /> {experience.meetingPoint?.name ?? "Meeting details not listed"}
                             </p>
-                          </div>
+                          </button>
                         ))}
                       </div>
                     </div>
@@ -267,7 +293,7 @@ export function BookingFlow({
                           <div className="flex items-center gap-3">
                             <button
                               aria-label="Decrease adults"
-                              className="size-8 rounded-full border border-border bg-card text-foreground font-bold hover:bg-muted disabled:opacity-40"
+                              className="size-11 rounded-full border border-border bg-card text-foreground font-bold hover:bg-muted disabled:opacity-40"
                               disabled={adultsCount <= 1}
                               onClick={() => setAdultsCount(adultsCount - 1)}
                               type="button"
@@ -277,7 +303,7 @@ export function BookingFlow({
                             <span className="w-6 text-center text-sm font-semibold">{adultsCount}</span>
                             <button
                               aria-label="Increase adults"
-                              className="size-8 rounded-full border border-border bg-card text-foreground font-bold hover:bg-muted disabled:opacity-40"
+                              className="size-11 rounded-full border border-border bg-card text-foreground font-bold hover:bg-muted disabled:opacity-40"
                               disabled={totalGuests >= 10}
                               onClick={() => setAdultsCount(adultsCount + 1)}
                               type="button"
@@ -296,7 +322,7 @@ export function BookingFlow({
                           <div className="flex items-center gap-3">
                             <button
                               aria-label="Decrease children"
-                              className="size-8 rounded-full border border-border bg-card text-foreground font-bold hover:bg-muted disabled:opacity-40"
+                              className="size-11 rounded-full border border-border bg-card text-foreground font-bold hover:bg-muted disabled:opacity-40"
                               disabled={childrenCount <= 0}
                               onClick={() => setChildrenCount(childrenCount - 1)}
                               type="button"
@@ -306,7 +332,7 @@ export function BookingFlow({
                             <span className="w-6 text-center text-sm font-semibold">{childrenCount}</span>
                             <button
                               aria-label="Increase children"
-                              className="size-8 rounded-full border border-border bg-card text-foreground font-bold hover:bg-muted disabled:opacity-40"
+                              className="size-11 rounded-full border border-border bg-card text-foreground font-bold hover:bg-muted disabled:opacity-40"
                               disabled={totalGuests >= 10}
                               onClick={() => setChildrenCount(childrenCount + 1)}
                               type="button"
@@ -327,17 +353,17 @@ export function BookingFlow({
 
                   <Button
                     className="w-full sm:w-auto h-12 px-8 font-semibold"
-                    onClick={() => setCurrentStep(2)}
+                    type="submit"
                   >
                     <span>Continue to Traveller Details</span>
                     <ArrowRight size={16} />
                   </Button>
-                </div>
+                </form>
               )}
 
               {/* STEP 2: Traveller Details */}
               {currentStep === 2 && (
-                <div className="space-y-8">
+                <form className="space-y-8" method="post" onSubmit={continueFromTravellerDetails} ref={travellerFormRef}>
                   <div>
                     <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Step 2 of 4</span>
                     <h1 className="mt-2 font-display text-3xl font-medium tracking-tight sm:text-4xl">
@@ -497,12 +523,12 @@ export function BookingFlow({
                   </div>
 
                   <div className="flex gap-4">
-                    <Button onClick={() => setCurrentStep(1)} variant="outline">
+                    <Button onClick={() => setCurrentStep(1)} type="button" variant="outline">
                       <ArrowLeft size={16} /> Back
                     </Button>
                     <Button
                       className="flex-1 sm:flex-initial h-12 px-8 font-semibold"
-                      onClick={() => setCurrentStep(3)}
+                      type="submit"
                     >
                       <span>Review Booking Summary</span>
                       <ArrowRight size={16} />
@@ -514,7 +540,7 @@ export function BookingFlow({
                       Privacy Notice
                     </Link>.
                   </p>
-                </div>
+                </form>
               )}
 
               {/* STEP 3: Booking Summary Review */}
@@ -534,12 +560,14 @@ export function BookingFlow({
                   <div className="glass-panel glass-panel--subtle rounded-3xl border border-border/70 bg-card p-6 shadow-sm sm:p-7 space-y-6">
                     <div className="flex items-start gap-4 border-b border-border/60 pb-6">
                       <div className="relative isolate size-20 overflow-hidden rounded-2xl bg-muted shrink-0">
-                        <Image
-                          alt={experience.images[0].caption || experience.title}
-                          className="object-cover"
-                          fill
-                          src={experience.images[0].url}
-                        />
+                        {experience.images[0] ? (
+                          <Image
+                            alt={experience.images[0].caption || experience.title}
+                            className="object-cover"
+                            fill
+                            src={experience.images[0].url}
+                          />
+                        ) : null}
                       </div>
                       <div>
                         <span className="text-xs font-semibold uppercase text-primary tracking-wider">
@@ -601,12 +629,11 @@ export function BookingFlow({
                       </p>
                     )}
 
-                    {/* Cancellation Policy Banner */}
                     <div className="rounded-2xl border border-border/80 bg-secondary/30 p-4 text-xs text-muted-foreground flex items-start gap-2.5">
                       <ShieldCheck size={16} className="text-primary shrink-0 mt-0.5" />
                       <div>
-                        <strong className="text-foreground block">Cancellation terms</strong>
-                        <span>{experience.cancellationPolicy || "Cancellation terms are not listed. Contact Nomsa Tour Guides before completing your booking."}</span>
+                        <strong className="text-foreground block">Cancellation terms (saved with your booking)</strong>
+                        <span>{cancellationTerms}</span>
                       </div>
                     </div>
                   </div>
@@ -638,6 +665,9 @@ export function BookingFlow({
                       You&apos;ll be redirected to PayFast to enter your payment details after reviewing this booking.
                     </p>
                   </div>
+                  <p className="rounded-2xl border border-border/70 bg-secondary/30 p-4 text-sm text-muted-foreground">
+                    Instant booking for a fixed experience. Your booking is confirmed only after PayFast records a successful payment.
+                  </p>
 
                   {/* Payment Gateway Box */}
                   <div className="glass-panel glass-panel--subtle rounded-3xl border border-border/70 bg-card p-6 shadow-sm sm:p-7 space-y-6">
@@ -688,12 +718,14 @@ export function BookingFlow({
                 {/* Header Summary */}
                 <div className="flex gap-4 border-b border-border/60 pb-5">
                   <div className="relative isolate size-16 rounded-2xl overflow-hidden bg-muted shrink-0">
-                    <Image
-                      alt={experience.images[0].caption || experience.title}
-                      className="object-cover"
-                      fill
-                      src={experience.images[0].url}
-                    />
+                    {experience.images[0] ? (
+                      <Image
+                        alt={experience.images[0].caption || experience.title}
+                        className="object-cover"
+                        fill
+                        src={experience.images[0].url}
+                      />
+                    ) : null}
                   </div>
                   <div>
                     <h3 className="font-display text-base font-semibold line-clamp-1">{experience.title}</h3>
@@ -716,15 +748,21 @@ export function BookingFlow({
                     <span className="font-medium text-foreground">{formatCurrency(baseRate)}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Additional per-traveller fee</span>
-                    <span className="text-foreground">{formatCurrency(additionalGuestFee)}</span>
+                    <span>Optional extras</span>
+                    <span className="text-foreground">Not offered / not included</span>
                   </div>
-                  {platformDiscount > 0 ? (
-                    <div className="flex justify-between text-primary font-medium">
-                      <span>Group travel saving (4+ guests)</span>
-                      <span>-{formatCurrency(platformDiscount)}</span>
-                    </div>
-                  ) : null}
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Transport</span>
+                    <span className="text-foreground">Not included</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Separate platform fee</span>
+                    <span className="text-foreground">None recorded</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Taxes</span>
+                    <span className="text-foreground">Not calculated / not included</span>
+                  </div>
                 </div>
 
                 {/* Total */}
@@ -742,7 +780,7 @@ export function BookingFlow({
                 <div className="space-y-2.5 rounded-2xl bg-secondary/40 p-4 text-xs text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <ShieldCheck size={14} className="text-primary shrink-0" />
-                    <span>{experience.cancellationPolicy || "Cancellation terms are not listed for this experience."}</span>
+                    <span>{cancellationTerms}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Lock size={14} className="text-primary shrink-0" />
@@ -765,7 +803,9 @@ export function BookingFlow({
           className="h-11 px-6 font-semibold bg-accent text-white"
           disabled={isSubmitting}
           onClick={() => {
-            if (currentStep < 4) setCurrentStep(currentStep + 1);
+            if (currentStep === 1) dateFormRef.current?.requestSubmit();
+            else if (currentStep === 2) travellerFormRef.current?.requestSubmit();
+            else if (currentStep === 3) setCurrentStep(4);
             else handlePayFastCheckout();
           }}
           size="sm"

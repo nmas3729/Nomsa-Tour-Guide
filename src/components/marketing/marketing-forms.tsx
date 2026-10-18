@@ -9,38 +9,34 @@ import { Label } from "@/src/components/ui/label";
 import { Textarea } from "@/src/components/ui/textarea";
 
 export function NewsletterForm() {
-  const [message, setMessage] = useState("");
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setMessage("Thank you! Newsletter sign-up preview received.");
-  }
-
   return (
-    <form className="grid gap-3" onSubmit={handleSubmit}>
+    <div className="grid gap-3">
       <Label className="sr-only" htmlFor="newsletter-email">Email address</Label>
       <div className="flex flex-col gap-2.5 sm:flex-row">
         <Input
           autoComplete="email"
-          className="h-12 rounded-full border-border/80 bg-background px-6 text-sm shadow-sm transition-all focus:border-primary"
+          className="h-12 rounded-full border-border/80 bg-background px-6 text-sm shadow-sm transition-all focus:border-primary disabled:cursor-not-allowed disabled:opacity-60"
+          aria-describedby="newsletter-unavailable"
+          disabled
           id="newsletter-email"
           name="email"
           placeholder="Enter your email address"
-          required
           type="email"
         />
         <Button
           className="h-12 shrink-0 rounded-full bg-accent px-7 font-semibold text-white shadow-md shadow-accent/20 hover:bg-accent/90"
-          type="submit"
+          aria-describedby="newsletter-unavailable"
+          disabled
+          type="button"
         >
-          <span>Join Nomsa</span>
+          <span>Coming soon</span>
           <ArrowRight aria-hidden="true" size={16} />
         </Button>
       </div>
-      <p aria-live="polite" className="min-h-5 text-xs text-muted-foreground">
-        {message || "Design preview only · Unsubscribe with a single click anytime."}
+      <p className="min-h-5 text-xs text-muted-foreground" id="newsletter-unavailable">
+        Newsletter sign-up is not available yet.
       </p>
-    </form>
+    </div>
   );
 }
 
@@ -82,7 +78,7 @@ export function ContactForm() {
   }
 
   return (
-    <form className="grid gap-5" onSubmit={handleSubmit}>
+    <form className="grid gap-5" method="post" onSubmit={handleSubmit}>
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="grid gap-2">
           <Label htmlFor="contact-name">Your name</Label>

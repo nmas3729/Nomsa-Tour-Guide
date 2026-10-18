@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { connection } from "next/server";
 import { AuthShell } from "@/src/features/auth/components/auth-ui";
 import { LoginForm } from "@/src/features/auth/components/auth-forms";
 
@@ -9,15 +9,20 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-async function LoginContent({
+export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ callbackUrl?: string; verified?: string; mfaEnabled?: string }>;
 }) {
+  await connection();
   const { callbackUrl, verified, mfaEnabled } = await searchParams;
 
   return (
-    <>
+    <AuthShell
+      eyebrow="WELCOME BACK"
+      title="Good to have you here."
+      description="Sign in to continue discovering South Africa with local expertise."
+    >
       {verified === "1" ? (
         <p className="auth-notice auth-notice-success" role="status">
           Your email has been verified. You can sign in now.
@@ -29,24 +34,6 @@ async function LoginContent({
         </p>
       ) : null}
       <LoginForm callbackUrl={callbackUrl} />
-    </>
-  );
-}
-
-export default function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ callbackUrl?: string; verified?: string; mfaEnabled?: string }>;
-}) {
-  return (
-    <AuthShell
-      eyebrow="WELCOME BACK"
-      title="Good to have you here."
-      description="Sign in to continue discovering South Africa with local expertise."
-    >
-      <Suspense fallback={<p className="auth-description">Preparing sign-in…</p>}>
-        <LoginContent searchParams={searchParams} />
-      </Suspense>
     </AuthShell>
   );
 }

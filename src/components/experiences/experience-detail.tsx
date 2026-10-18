@@ -9,7 +9,6 @@ import {
   Clock,
   CreditCard,
   Globe,
-  Heart,
   HelpCircle,
   Info,
   MapPin,
@@ -25,18 +24,27 @@ import { ExperienceCard } from "@/src/components/cards/experience-card";
 import { Container } from "@/src/components/layout/container";
 import { Section } from "@/src/components/layout/section";
 import { formatCurrency } from "@/src/lib/format";
-import { experiences, guides } from "@/src/data/public-site";
+import { guides } from "@/src/data/public-site";
 import type { ExperienceDetailData } from "@/src/data/experience-details";
+import type { ApprovedExperienceSummary } from "@/src/server/services/public-verification-service";
 
-export function ExperienceDetail({ data }: { data: ExperienceDetailData }) {
+export function ExperienceDetail({
+  data,
+  approvedExperiences,
+  bookingSearchQuery,
+}: {
+  data: ExperienceDetailData;
+  approvedExperiences: ApprovedExperienceSummary[];
+  bookingSearchQuery?: string;
+}) {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
-  const [isWishlisted, setIsWishlisted] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
 
-  const guide = data.guideSlug ? guides.find((candidate) => candidate.slug === data.guideSlug) : undefined;
+  const guide = data.guideProfile ??
+    (data.guideSlug ? guides.find((candidate) => candidate.slug === data.guideSlug) : undefined);
   const guideExperiences = guide
-    ? experiences.filter((experience) => experience.slug !== data.slug && experience.guide.name === guide.name)
+    ? approvedExperiences.filter((experience) => experience.slug !== data.slug && experience.guide.name === guide.name)
     : [];
   const experienceRegions = data.province.split(" & ").filter(Boolean);
   const experienceLocation = [data.destination, data.province].filter(Boolean).join(", ") || "Location not listed";
@@ -46,12 +54,14 @@ export function ExperienceDetail({ data }: { data: ExperienceDetailData }) {
   const guideSharesExperienceRegion = Boolean(
     guide && experienceRegions.some((region) => guide.location?.includes(region)),
   );
-  const similarExperiences = experiences
-    .filter((experience) => {
-      if (experience.slug === data.slug) return false;
-      return experience.provinces.some((province) => experienceRegions.includes(province)) || experience.category === data.category;
-    })
+  const similarExperiences = approvedExperiences
+    .filter((experience) =>
+      experience.slug !== data.slug &&
+      (experience.provinces.some((province) => experienceRegions.includes(province)) ||
+        experience.category === data.category),
+    )
     .slice(0, 3);
+  const bookingHref = `/experiences/${data.slug}/book${bookingSearchQuery ? `?${bookingSearchQuery}` : ""}`;
 
   function handleShare() {
     navigator.clipboard?.writeText(window.location.href);
@@ -109,16 +119,6 @@ export function ExperienceDetail({ data }: { data: ExperienceDetailData }) {
               >
                 <Share2 size={16} />
               </Button>
-              <Button
-                aria-label={isWishlisted ? "Remove from wishlist" : "Save to wishlist"}
-                aria-pressed={isWishlisted}
-                className="rounded-full"
-                onClick={() => setIsWishlisted(!isWishlisted)}
-                size="icon"
-                variant="outline"
-              >
-                <Heart className={isWishlisted ? "fill-highlight text-highlight" : ""} size={16} />
-              </Button>
             </div>
           </div>
           {copiedShare ? (
@@ -158,6 +158,7 @@ export function ExperienceDetail({ data }: { data: ExperienceDetailData }) {
       {/* Hero Image Gallery */}
       <section className="pb-10">
         <Container>
+          {data.images.length ? (
           <div className="relative grid gap-3 lg:grid-cols-12">
             {/* Primary Large Image */}
             <button
@@ -172,7 +173,7 @@ export function ExperienceDetail({ data }: { data: ExperienceDetailData }) {
                 fill
                 preload
                 sizes="(max-width: 1024px) 100vw, 66vw"
-                src={data.images[activeImageIndex]?.url || data.images[0].url}
+                src={data.images[activeImageIndex]?.url ?? data.images[0].url}
               />
               <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-100 transition-opacity duration-300 sm:opacity-0 sm:group-hover:opacity-100 motion-reduce:transition-none" />
               <span className="absolute bottom-5 left-5 z-30 max-w-[55%] text-left text-xs font-medium leading-relaxed text-white drop-shadow sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 motion-reduce:transition-none">
@@ -210,6 +211,11 @@ export function ExperienceDetail({ data }: { data: ExperienceDetailData }) {
               ))}
             </div>
           </div>
+          ) : (
+              <div className="grid aspect-[16/10] place-items-center rounded-3xl border border-border/70 bg-secondary text-sm text-muted-foreground">
+                Photos have not been provided for this experience.
+              </div>
+            )}
         </Container>
       </section>
 
@@ -342,7 +348,9 @@ export function ExperienceDetail({ data }: { data: ExperienceDetailData }) {
                 {data.meetingPoint ? (
                   <>
                     <p className="mt-2 text-sm font-medium text-foreground">{data.meetingPoint.name}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{data.meetingPoint.address}</p>
+                    {data.meetingPoint.address ? (
+                      <p className="mt-0.5 text-xs text-muted-foreground">{data.meetingPoint.address}</p>
+                    ) : null}
                     {data.meetingPoint.coordinates ? (
                       <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                         <MapPin aria-hidden="true" className="size-4 shrink-0 text-primary" />
@@ -519,7 +527,7 @@ export function ExperienceDetail({ data }: { data: ExperienceDetailData }) {
                           <div>
                             <p className="text-sm font-semibold text-foreground">{rev.name}</p>
                             <p className="text-xs text-muted-foreground">
-                              {rev.country} · {rev.date}
+                              {rev.country ? `${rev.country} · ` : ""}{rev.date}
                             </p>
                           </div>
                         </div>
@@ -535,10 +543,12 @@ export function ExperienceDetail({ data }: { data: ExperienceDetailData }) {
                         </p>
                       </div>
 
-                      <div className="mt-5 border-t border-border/50 pt-3 flex items-center gap-1 text-xs text-muted-foreground">
-                        <ThumbsUp size={12} />
-                        <span>Helpful ({rev.helpfulCount})</span>
-                      </div>
+                      {typeof rev.helpfulCount === "number" ? (
+                        <div className="mt-5 border-t border-border/50 pt-3 flex items-center gap-1 text-xs text-muted-foreground">
+                          <ThumbsUp size={12} />
+                          <span>Helpful ({rev.helpfulCount})</span>
+                        </div>
+                      ) : null}
                     </div>
                   ))}
                 </div>
@@ -608,7 +618,7 @@ export function ExperienceDetail({ data }: { data: ExperienceDetailData }) {
                   className="mt-5 h-13 w-full rounded-full bg-accent text-white font-semibold text-base shadow-xl shadow-accent/25 transition-transform hover:-translate-y-0.5 hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transform-none motion-reduce:transition-none"
                   size="lg"
                 >
-                  <Link href={`/experiences/${data.slug}/book`}>Choose date &amp; travellers</Link>
+                  <Link href={bookingHref}>Choose date &amp; travellers</Link>
                 </Button>
 
                 <p className="mt-3 text-center text-xs text-muted-foreground">
@@ -657,7 +667,7 @@ export function ExperienceDetail({ data }: { data: ExperienceDetailData }) {
       </Section>
 
       {/* Fullscreen Photo Modal */}
-      {modalOpen ? (
+      {modalOpen && data.images.length ? (
         <div
           aria-label="Experience photo gallery"
           aria-modal="true"
@@ -677,7 +687,7 @@ export function ExperienceDetail({ data }: { data: ExperienceDetailData }) {
               alt={data.images[activeImageIndex]?.caption || data.title}
               className="object-contain"
               fill
-              src={data.images[activeImageIndex]?.url || data.images[0].url}
+              src={data.images[activeImageIndex]?.url ?? data.images[0].url}
             />
           </div>
           <div className="absolute bottom-6 flex gap-2">

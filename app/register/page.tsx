@@ -4,14 +4,14 @@ import { RegistrationForm } from "@/src/features/auth/components/auth-forms";
 
 export const metadata: Metadata = {
   title: "Create an account",
-  description: "Join Nomsa Tour Guides as a traveller or local guide.",
+  description: "Join us as a traveller or local guide.",
   robots: { index: false, follow: false },
 };
 
 export default function RegisterPage() {
   return (
     <AuthShell
-      eyebrow="JOIN THE JOURNEY"
+      eyebrow="JOIN US"
       title="Your next story starts here."
       description="Create an account to plan a more personal journey through South Africa."
     >

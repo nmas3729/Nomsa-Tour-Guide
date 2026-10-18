@@ -33,11 +33,15 @@ export async function sendApprovedBookingInvoice(paymentReference: string): Prom
       where: { paymentReference },
       include: { booking: { include: bookingInclude } },
     });
+    const lateCapturedPayment =
+      payment?.status === PaymentStatus.REFUND_PENDING &&
+      payment.booking.status === "REFUND_REQUESTED";
     if (
       !payment ||
-      payment.status !== PaymentStatus.SUCCEEDED ||
-      payment.booking.paymentStatus !== PaymentStatus.SUCCEEDED ||
-      !["CONFIRMED", "CHECKED_IN", "COMPLETED", "NO_SHOW"].includes(payment.booking.status) ||
+      (payment.status !== PaymentStatus.SUCCEEDED && !lateCapturedPayment) ||
+      (!lateCapturedPayment &&
+        (payment.booking.paymentStatus !== PaymentStatus.SUCCEEDED ||
+          !["CONFIRMED", "CHECKED_IN", "COMPLETED", "NO_SHOW"].includes(payment.booking.status))) ||
       !payment.paidAt
     ) {
       return null;
@@ -95,7 +99,7 @@ export async function sendApprovedBookingInvoice(paymentReference: string): Prom
     const { RESEND_API_KEY, BILLING_FROM_EMAIL } = requireBillingEmailEnvironment();
     const recipient = claim.summary.leadEmail;
     if (!recipient) {
-      throw new Error("Approved booking has no customer email for invoice delivery.");
+      throw new Error("Approved booking has no customer email for receipt delivery.");
     }
 
     const pdf = generateInvoicePdf(invoiceDocumentData(claim.summary));
@@ -104,11 +108,11 @@ export async function sendApprovedBookingInvoice(paymentReference: string): Prom
       {
         from: BILLING_FROM_EMAIL,
         to: recipient,
-        subject: `Invoice for booking ${claim.summary.reference}`,
+        subject: `Payment receipt for booking ${claim.summary.reference}`,
         text: [
           `Dear ${claim.summary.leadName || "Traveller"},`,
           "",
-          `Attached is the invoice for booking ${claim.summary.reference}.`,
+          `Attached is the payment receipt for booking ${claim.summary.reference}.`,
           `Experience: ${claim.summary.experienceTitle}`,
           `Destination: ${claim.summary.destination}`,
           `Booking date: ${claim.summary.date} (${claim.summary.timeSlot})`,
@@ -119,7 +123,7 @@ export async function sendApprovedBookingInvoice(paymentReference: string): Prom
           `For booking enquiries, WhatsApp ${BILLING_WHATSAPP_NUMBER} (${BILLING_WHATSAPP_URL}) or visit nomsatourguides.co.za.`,
         ].join("\n"),
         attachments: [{
-          filename: `invoice-${claim.summary.reference || claim.paymentId}.pdf`,
+          filename: `receipt-${claim.summary.reference || claim.paymentId}.pdf`,
           content: pdf.toString("base64"),
         }],
       },
@@ -127,7 +131,7 @@ export async function sendApprovedBookingInvoice(paymentReference: string): Prom
     );
 
     if (result.error) {
-      throw new Error(`Resend invoice email failed: ${result.error.name}`);
+      throw new Error(`Resend receipt email failed: ${result.error.name}`);
     }
     providerAccepted = true;
 

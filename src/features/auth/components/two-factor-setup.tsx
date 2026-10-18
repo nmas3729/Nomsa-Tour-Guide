@@ -78,7 +78,7 @@ export function TwoFactorSetup() {
               Keep this key private. Enter it in your authenticator app, then use the current 6-digit code below.
             </p>
           </div>
-          <form className="grid gap-4" onSubmit={confirmSetup}>
+          <form className="grid gap-4" method="post" onSubmit={confirmSetup}>
             <div className="grid gap-2">
               <Label htmlFor="totp-confirm-code">6-digit authenticator code</Label>
               <Input

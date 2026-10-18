@@ -3,8 +3,17 @@ import "server-only";
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { hashPassword } from "@/src/features/auth/lib/password";
 import { Prisma } from "@/src/server/db/generated/client";
-import { BookingStatus, PaymentStatus } from "@/src/server/db/generated/enums";
+import {
+  BookingStatus,
+  ExperienceStatus,
+  GuideApplicationStatus,
+  PaymentStatus,
+} from "@/src/server/db/generated/enums";
 import { createBookingSchema, type CreateBookingInput } from "@/src/features/booking/schemas";
+import {
+  customRequestOfferSnapshotSchema,
+  type CustomRequestOfferSnapshot,
+} from "@/src/features/booking/custom-request-schemas";
 import { getServerEnvironment } from "@/src/config/env";
 import { getPrismaClient } from "@/src/server/db/prisma";
 import {
@@ -31,6 +40,17 @@ export interface BookingRecordSummary {
   currency: string;
   status: BookingStatus;
   paymentStatus: PaymentStatus;
+  bookingType?: "INSTANT" | "REQUEST_TO_BOOK";
+  customRequestId?: string | null;
+  baseAmount?: number | null;
+  optionalExtrasAmount?: number | null;
+  transportAmount?: number | null;
+  platformFeeAmount?: number | null;
+  taxAmount?: number | null;
+  cancellationPolicySnapshot?: string | null;
+  agreedTermsSnapshot?: CustomRequestOfferSnapshot | null;
+  refundedAmount?: number;
+  serviceCompletedAt?: string | null;
   paidAmount?: number | null;
   paidCurrency?: string | null;
   paidAt?: string | null;
@@ -79,6 +99,16 @@ export function toBookingRecordSummary(booking: {
   childrenCount: number;
   timeSlot: string;
   totalPrice: Prisma.Decimal;
+  baseAmount: Prisma.Decimal | null;
+  optionalExtrasAmount: Prisma.Decimal | null;
+  transportAmount: Prisma.Decimal | null;
+  platformFeeAmount: Prisma.Decimal | null;
+  taxAmount: Prisma.Decimal | null;
+  bookingType: "INSTANT" | "REQUEST_TO_BOOK";
+  customRequestId?: string | null;
+  cancellationPolicySnapshot: string | null;
+  agreedTermsSnapshot?: Prisma.JsonValue | null;
+  serviceCompletedAt: Date | null;
   currency: string;
   status: BookingStatus;
   paymentStatus: PaymentStatus;
@@ -98,13 +128,14 @@ export function toBookingRecordSummary(booking: {
     paymentReference: string;
     status: PaymentStatus;
     amount: Prisma.Decimal;
+    refundedAmount: Prisma.Decimal;
     currency: string;
     paidAt: Date | null;
     metadata: Prisma.JsonValue | null;
   }>;
 }): BookingRecordSummary {
   const lead = booking.guests[0];
-  const successfulPayment = booking.payments.find((payment) => payment.status === PaymentStatus.SUCCEEDED);
+  const successfulPayment = booking.payments.find((payment) => payment.paidAt !== null);
   const metadata =
     successfulPayment?.metadata &&
     typeof successfulPayment.metadata === "object" &&
@@ -112,6 +143,10 @@ export function toBookingRecordSummary(booking: {
       ? successfulPayment.metadata
       : null;
   const invoiceEmailStatus = metadata?.invoiceEmailStatus;
+  const agreedTermsSnapshot =
+    booking.agreedTermsSnapshot == null
+      ? null
+      : customRequestOfferSnapshotSchema.parse(booking.agreedTermsSnapshot);
   return {
     id: booking.id,
     reference: successfulPayment?.paymentReference ?? booking.payments[0]?.paymentReference ?? "",
@@ -130,6 +165,19 @@ export function toBookingRecordSummary(booking: {
     currency: booking.currency,
     status: booking.status,
     paymentStatus: booking.paymentStatus,
+    bookingType: booking.bookingType,
+    customRequestId: booking.customRequestId ?? null,
+    baseAmount: booking.baseAmount === null ? null : Number(booking.baseAmount),
+    optionalExtrasAmount:
+      booking.optionalExtrasAmount === null ? null : Number(booking.optionalExtrasAmount),
+    transportAmount: booking.transportAmount === null ? null : Number(booking.transportAmount),
+    platformFeeAmount:
+      booking.platformFeeAmount === null ? null : Number(booking.platformFeeAmount),
+    taxAmount: booking.taxAmount === null ? null : Number(booking.taxAmount),
+    cancellationPolicySnapshot: booking.cancellationPolicySnapshot,
+    agreedTermsSnapshot,
+    refundedAmount: booking.payments.reduce((sum, payment) => sum + Number(payment.refundedAmount), 0),
+    serviceCompletedAt: booking.serviceCompletedAt?.toISOString() ?? null,
     paidAmount: successfulPayment ? Number(successfulPayment.amount) : null,
     paidCurrency: successfulPayment?.currency ?? null,
     paidAt: successfulPayment?.paidAt?.toISOString() ?? null,
@@ -153,6 +201,7 @@ export const bookingInclude = {
       paymentReference: true,
       status: true,
       amount: true,
+      refundedAmount: true,
       currency: true,
       paidAt: true,
       metadata: true,
@@ -167,15 +216,22 @@ function payFastPayloadFor(booking: {
   travellerCount: number;
   totalPrice: Prisma.Decimal;
   guests: Array<{ fullName: string; email: string | null; phone: string | null }>;
-  payments: Array<{ paymentReference: string }>;
+  payments: Array<{ paymentReference: string; status: PaymentStatus }>;
   experience: { title: string; slug: string };
 }, appUrl: string) {
   const lead = booking.guests[0];
+  const activePayment = booking.payments.find(
+    (payment) =>
+      payment.status === PaymentStatus.PENDING || payment.status === PaymentStatus.PROCESSING,
+  );
+  if (!activePayment) {
+    throw new BookingError("This booking has no active payment attempt.", 409);
+  }
   const [firstName = "Guest", ...lastNames] = (lead?.fullName ?? "Guest Traveller").split(" ");
   const date = booking.experienceDate.toISOString().slice(0, 10);
 
   return createPayFastPaymentPayload({
-    paymentReference: booking.payments[0].paymentReference,
+    paymentReference: activePayment.paymentReference,
     amount: Number(booking.totalPrice),
     itemName: `Nomsa Tour: ${booking.experience.title.slice(0, 80)}`,
     itemDescription: `Date: ${date} (${booking.timeSlot}) for ${booking.travellerCount} guests`,
@@ -187,6 +243,40 @@ function payFastPayloadFor(booking: {
     cancelUrl: `${appUrl}/experiences/${booking.experience.slug}/book?cancelled=true`,
     notifyUrl: `${appUrl}/api/payments/payfast/itn`,
   });
+}
+
+export async function getPayFastCheckoutForBooking(bookingId: string, customerId: string) {
+  const appUrl = getServerEnvironment().NEXT_PUBLIC_APP_URL;
+  if (!appUrl) {
+    throw new Error("NEXT_PUBLIC_APP_URL must be configured for booking checkout.");
+  }
+  assertPayFastConfiguration();
+  const booking = await getPrismaClient().booking.findFirst({
+    where: { id: bookingId, customerId },
+    include: {
+      ...bookingInclude,
+      customRequest: { select: { acceptedAt: true, status: true } },
+    },
+  });
+  if (!booking) {
+    throw new BookingError("Booking not found.", 404);
+  }
+  if (
+    booking.status !== BookingStatus.AWAITING_PAYMENT ||
+    (booking.paymentStatus !== PaymentStatus.PENDING &&
+      booking.paymentStatus !== PaymentStatus.PROCESSING) ||
+    (booking.reservationExpiresAt !== null && booking.reservationExpiresAt <= new Date()) ||
+    (booking.customRequestId !== null &&
+      (!booking.customRequest?.acceptedAt ||
+        (booking.customRequest.status !== "ACCEPTED" &&
+          booking.customRequest.status !== "BOOKED")))
+  ) {
+    throw new BookingError("This booking is not ready for payment.", 409);
+  }
+  return {
+    booking: toBookingRecordSummary(booking),
+    payfast: payFastPayloadFor(booking, appUrl),
+  };
 }
 
 export async function createBooking(input: CreateBookingInput, idempotencyKey: string) {
@@ -240,17 +330,45 @@ export async function createBooking(input: CreateBookingInput, idempotencyKey: s
         ) {
           throw new BookingError("This booking no longer has an active payment attempt.", 409);
         }
+        if (
+          existingBooking.experience.status !== ExperienceStatus.PUBLISHED ||
+          existingBooking.experience.verificationStatus !== GuideApplicationStatus.APPROVED ||
+          existingBooking.guide.verificationStatus !== GuideApplicationStatus.APPROVED ||
+          existingBooking.guide.deletedAt ||
+          !existingBooking.guide.user.isActive ||
+          existingBooking.guide.user.deletedAt
+        ) {
+          throw new BookingError("This experience is no longer approved for booking.", 409);
+        }
         return existingBooking;
       }
 
       const experience = await transaction.experience.findFirst({
-        where: { slug: values.experienceSlug, status: "PUBLISHED", deletedAt: null },
+        where: {
+          slug: values.experienceSlug,
+          status: ExperienceStatus.PUBLISHED,
+          verificationStatus: GuideApplicationStatus.APPROVED,
+          deletedAt: null,
+          guide: {
+            is: {
+              verificationStatus: GuideApplicationStatus.APPROVED,
+              deletedAt: null,
+              user: { is: { isActive: true, deletedAt: null } },
+            },
+          },
+        },
       });
       if (!experience) {
         throw new BookingError("This experience is not available for booking.", 404);
       }
       if (experience.currency !== "ZAR") {
         throw new BookingError("This experience cannot currently be paid for in ZAR.", 409);
+      }
+      if (totalGuests < experience.minGuests || totalGuests > experience.maxGuests) {
+        throw new BookingError(
+          `This experience accepts ${experience.minGuests} to ${experience.maxGuests} travellers.`,
+          409,
+        );
       }
 
       const availability =
@@ -299,10 +417,8 @@ export async function createBooking(input: CreateBookingInput, idempotencyKey: s
         });
       }
 
-      const totalPrice =
-        Number(experience.price) * totalGuests +
-        120 * totalGuests -
-        (totalGuests >= 4 ? 250 : 0);
+      const baseAmount = experience.price.mul(totalGuests);
+      const totalPrice = baseAmount;
       await transaction.booking.create({
         data: {
           id: bookingId,
@@ -318,6 +434,14 @@ export async function createBooking(input: CreateBookingInput, idempotencyKey: s
           childrenCount: values.childrenCount,
           timeSlot: values.timeSlot,
           totalPrice,
+          baseAmount,
+          optionalExtrasAmount: 0,
+          transportAmount: 0,
+          platformFeeAmount: 0,
+          taxAmount: null,
+          bookingType: "INSTANT",
+          cancellationPolicySnapshot:
+            experience.cancellationPolicy || "No cancellation policy was provided at booking time.",
           currency: experience.currency,
           status: BookingStatus.AWAITING_PAYMENT,
           paymentStatus: PaymentStatus.PENDING,
@@ -614,6 +738,17 @@ export async function processPayFastITN(
       throw new BookingError("Booking state changed while processing this ITN.", 409);
     }
 
+    if (isComplete && payment.booking.customRequestId) {
+      await transaction.customRequest.updateMany({
+        where: {
+          id: payment.booking.customRequestId,
+          status: "ACCEPTED",
+          acceptedAt: { not: null },
+        },
+        data: { status: "BOOKED" },
+      });
+    }
+
     if (isFailure && payment.booking.availabilityId) {
       await transaction.availability.update({
         where: { id: payment.booking.availabilityId },
@@ -630,13 +765,21 @@ export async function processPayFastITN(
 export async function getBookingConfirmation(
   bookingId: string,
   idempotencyKey: string | undefined,
+  customerId?: string,
 ): Promise<BookingRecordSummary | null> {
-  if (!idempotencyKey) {
+  if (!idempotencyKey && !customerId) {
     return null;
+  }
+  const accessConditions: Prisma.BookingWhereInput[] = [];
+  if (idempotencyKey) {
+    accessConditions.push({ idempotencyKeyHash: hash(idempotencyKey) });
+  }
+  if (customerId) {
+    accessConditions.push({ customerId });
   }
   const prisma = getPrismaClient();
   const booking = await prisma.booking.findFirst({
-    where: { id: bookingId, idempotencyKeyHash: hash(idempotencyKey) },
+    where: { id: bookingId, OR: accessConditions },
     include: bookingInclude,
   });
   return booking ? toBookingRecordSummary(booking) : null;

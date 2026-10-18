@@ -8,7 +8,6 @@ import {
   CalendarDays,
   Compass,
   Filter,
-  Map as MapIcon,
   MapPin,
   RotateCcw,
   Search,
@@ -22,8 +21,9 @@ import { ExperienceCard } from "@/src/components/cards/experience-card";
 import { Container } from "@/src/components/layout/container";
 import { Section } from "@/src/components/layout/section";
 import { GlassPanel } from "@/src/components/ui/glass-panel";
-import { categories, destinations, experiences, provinces } from "@/src/data/public-site";
+import { categories, destinations, provinces } from "@/src/data/public-site";
 import { cn } from "@/src/lib/utils";
+import type { ApprovedExperienceSummary } from "@/src/server/services/public-verification-service";
 
 const sortOptions = [
   { label: "Default order", value: "default" },
@@ -31,49 +31,93 @@ const sortOptions = [
   { label: "Price: High to Low", value: "price_desc" },
 ];
 
-const languageOptions = ["English", "isiXhosa", "isiZulu", "Afrikaans", "French", "German"];
-
 type ExperiencesListingProps = {
+  approvedExperiences: ApprovedExperienceSummary[];
   availabilityDate: string;
   availabilityGuestCount: number;
   availabilitySearchError?: string;
   availableExperienceSlugs?: string[];
+  groupSizeFilter: number | null;
   minimumDate: string;
 };
 
 export function ExperiencesListing({
+  approvedExperiences,
   availabilityDate,
   availabilityGuestCount,
   availabilitySearchError,
   availableExperienceSlugs,
+  groupSizeFilter,
   minimumDate,
 }: ExperiencesListingProps) {
-  const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const searchParams = useSearchParams();
   const queryString = searchParams.toString();
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [selectedCategory, setSelectedCategoryState] = useState<string>(searchParams.get("category") ?? "All");
+  const [selectedLanguage, setSelectedLanguageState] = useState<string>(searchParams.get("language") ?? "");
+  const [durationFilter, setDurationFilterState] = useState<string>(searchParams.get("duration") ?? "any");
+  const setSelectedCategory = (category: string) => {
+    setSelectedCategoryState(category);
+    setCurrentPage(1);
+  };
+  const setSelectedLanguage = (language: string) => {
+    setSelectedLanguageState(language);
+    setCurrentPage(1);
+  };
+  const setDurationFilter = (duration: string) => {
+    setDurationFilterState(duration);
+    setCurrentPage(1);
+  };
   const requestedDestination = searchParams.get("destination") ?? "";
   const [destinationSelection, setDestinationSelection] = useState<{ query: string; value: string } | null>(null);
   const selectedDestination =
     destinationSelection?.query === queryString ? destinationSelection.value : requestedDestination;
-  const setSelectedDestination = (destination: string) =>
+  const setSelectedDestination = (destination: string) => {
     setDestinationSelection({ query: queryString, value: destination });
+    setCurrentPage(1);
+  };
   const [provinceSelection, setProvinceSelection] = useState<{ query: string; province: string } | null>(null);
   const requestedProvince = searchParams.get("province");
   const urlProvince = provinces.find((province) => province === requestedProvince) ?? "";
   const selectedProvince = provinceSelection?.query === queryString ? provinceSelection.province : urlProvince;
-  const setSelectedProvince = (province: string) => setProvinceSelection({ query: queryString, province });
+  const setSelectedProvince = (province: string) => {
+    setProvinceSelection({ query: queryString, province });
+    setCurrentPage(1);
+  };
   const [selectedSort, setSelectedSort] = useState<string>("default");
-  const [showMap, setShowMap] = useState<boolean>(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState<boolean>(false);
-  const [priceRange, setPriceRange] = useState<number>(3000);
-  const [familyFriendly, setFamilyFriendly] = useState<boolean>(false);
-  const [privateTour, setPrivateTour] = useState<boolean>(false);
-  const [currentPage, setCurrentPage] = useState<number>(1);
+  const maximumPrice = Math.max(
+    3000,
+    Math.ceil(Math.max(0, ...approvedExperiences.map(({ price }) => price)) / 1000) * 1000,
+  );
+  const requestedPrice = Number(searchParams.get("maxPrice"));
+  const [priceRange, setPriceRangeState] = useState<number>(
+    Number.isFinite(requestedPrice) && requestedPrice > 0 ? Math.min(requestedPrice, maximumPrice) : maximumPrice,
+  );
+  const setPriceRange = (price: number) => {
+    setPriceRangeState(price);
+    setCurrentPage(1);
+  };
   const filterDestinationId = useId();
   const filterDurationId = useId();
-
+  const filterLanguageId = useId();
+  const categoryNames = Array.from(new Set([
+    ...categories.map(({ name }) => name),
+    ...approvedExperiences.map(({ category }) => category),
+  ]));
+  const languageOptions = Array.from(new Set(approvedExperiences.flatMap(({ languages }) => languages))).sort();
+  const destinationOptions = [
+    ...destinations,
+    ...approvedExperiences
+      .filter((experience) => !destinations.some(({ name }) => name === experience.destination))
+      .map((experience) => ({
+        name: experience.destination,
+        province: experience.provinces.join(", "),
+        slug: experience.slug,
+      })),
+  ];
   // Filter experiences based on state
-  const filteredExperiences = experiences.filter((item) => {
+  const filteredExperiences = approvedExperiences.filter((item) => {
     if (availableExperienceSlugs && !availableExperienceSlugs.includes(item.slug)) {
       return false;
     }
@@ -84,6 +128,19 @@ export function ExperiencesListing({
       return false;
     }
     if (selectedProvince && !item.provinces.includes(selectedProvince)) {
+      return false;
+    }
+    if (groupSizeFilter !== null && (item.minGuests > groupSizeFilter || item.maxGuests < groupSizeFilter)) {
+      return false;
+    }
+    if (selectedLanguage && !item.languages.includes(selectedLanguage)) {
+      return false;
+    }
+    if (
+      durationFilter === "short" && item.durationMinutes >= 180 ||
+      durationFilter === "half" && (item.durationMinutes < 180 || item.durationMinutes >= 360) ||
+      durationFilter === "full" && item.durationMinutes < 360
+    ) {
       return false;
     }
     if (item.price > priceRange) {
@@ -101,6 +158,20 @@ export function ExperiencesListing({
         return 0;
     }
   });
+  const pageSize = 9;
+  const pageCount = Math.max(1, Math.ceil(sortedExperiences.length / pageSize));
+  const pagedExperiences = sortedExperiences.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const searchCriteria = new URLSearchParams();
+  if (selectedDestination) searchCriteria.set("destination", selectedDestination);
+  const province = selectedProvince;
+  if (province) searchCriteria.set("province", province);
+  if (availabilityDate) searchCriteria.set("date", availabilityDate);
+  if (searchParams.has("guests")) searchCriteria.set("guests", String(availabilityGuestCount));
+  if (selectedLanguage) searchCriteria.set("language", selectedLanguage);
+  if (selectedCategory !== "All") searchCriteria.set("category", selectedCategory);
+  if (priceRange < maximumPrice) searchCriteria.set("maxPrice", String(priceRange));
+  if (durationFilter !== "any") searchCriteria.set("duration", durationFilter);
+  const searchCriteriaString = searchCriteria.toString();
 
   return (
     <div className="experiences-page bg-background text-foreground">
@@ -201,16 +272,23 @@ export function ExperiencesListing({
                   aria-label="Max Budget"
                   className="experiences-search-input w-full appearance-none border-0 bg-transparent p-0 text-sm font-semibold text-white outline-none focus-visible:ring-0"
                   id="filter-budget"
+                  name="maxPrice"
                   onChange={(e) => setPriceRange(Number(e.target.value))}
                   value={priceRange}
                 >
                   <option className="bg-[#0d1117] text-white" value="1000">Up to R 1,000</option>
                   <option className="bg-[#0d1117] text-white" value="1500">Up to R 1,500</option>
                   <option className="bg-[#0d1117] text-white" value="2000">Up to R 2,000</option>
-                  <option className="bg-[#0d1117] text-white" value="3000">Up to R 3,000+</option>
+                  <option className="bg-[#0d1117] text-white" value={maximumPrice}>
+                    Up to R {maximumPrice.toLocaleString()}+
+                  </option>
                 </select>
               </div>
             </div>
+            <input name="category" type="hidden" value={selectedCategory} />
+            <input name="language" type="hidden" value={selectedLanguage} />
+            <input name="province" type="hidden" value={selectedProvince} />
+            <input name="duration" type="hidden" value={durationFilter} />
 
             {/* Search Button */}
             <Button
@@ -222,6 +300,12 @@ export function ExperiencesListing({
               <span>Explore</span>
             </Button>
           </form>
+          <p className="mx-auto mt-5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/80">
+            Looking for something tailored?
+            <Button asChild className="h-auto min-h-0 px-1 py-0 text-sm text-white underline underline-offset-4" variant="link">
+              <Link href="/custom-itinerary">Request a custom itinerary</Link>
+            </Button>
+          </p>
         </Container>
       </section>
 
@@ -245,7 +329,7 @@ export function ExperiencesListing({
               All provinces
             </button>
             {provinces.map((province) => {
-              const count = experiences.filter((experience) => experience.provinces.includes(province)).length;
+              const count = approvedExperiences.filter((experience) => experience.provinces.includes(province)).length;
               const isSelected = selectedProvince === province;
               return (
                 <button
@@ -289,36 +373,26 @@ export function ExperiencesListing({
             >
               All Categories
             </button>
-            {categories.map((cat) => (
+            {categoryNames.map((categoryName) => (
               <button
-                aria-pressed={selectedCategory === cat.name}
+                aria-pressed={selectedCategory === categoryName}
                 className={cn(
                   "rounded-full px-4 py-1.5 text-xs font-semibold transition-all whitespace-nowrap",
-                  selectedCategory === cat.name
+                  selectedCategory === categoryName
                     ? "bg-primary text-white shadow-sm"
                     : "border border-border/70 bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground",
                 )}
-                key={cat.name}
-                onClick={() => setSelectedCategory(cat.name)}
+                key={categoryName}
+                onClick={() => setSelectedCategory(categoryName)}
                 type="button"
               >
-                {cat.name}
+                {categoryName}
               </button>
             ))}
           </div>
 
           {/* Toggle Map & Mobile Filter trigger */}
           <div className="flex items-center gap-2 shrink-0">
-            <Button
-              className="hidden sm:inline-flex"
-              onClick={() => setShowMap(!showMap)}
-              size="sm"
-              variant={showMap ? "primary" : "outline"}
-            >
-              <MapIcon aria-hidden="true" size={14} />
-              <span>{showMap ? "Hide Map" : "Show Map"}</span>
-            </Button>
-
             <Button
               className="lg:hidden"
               onClick={() => setMobileFiltersOpen(true)}
@@ -356,7 +430,7 @@ export function ExperiencesListing({
           <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-border/60 pb-5">
             <div>
               <p className="text-sm font-semibold text-foreground">
-                {sortedExperiences.length} of {experiences.length} experiences
+                {sortedExperiences.length} of {approvedExperiences.length} reviewed experiences
               </p>
             </div>
 
@@ -394,10 +468,10 @@ export function ExperiencesListing({
                       setSelectedCategory("All");
                       setSelectedDestination("");
                       setSelectedProvince("");
-                      setPriceRange(3000);
+                      setPriceRange(maximumPrice);
+                      setSelectedLanguage("");
+                      setDurationFilter("any");
                       setCurrentPage(1);
-                      setFamilyFriendly(false);
-                      setPrivateTour(false);
                     }}
                     type="button"
                   >
@@ -417,9 +491,9 @@ export function ExperiencesListing({
                     value={selectedDestination}
                   >
                     <option value="">All Destinations</option>
-                    {destinations.map((d) => (
-                      <option key={d.slug} value={d.name}>
-                        {d.name} ({d.province})
+                    {destinationOptions.map((destination) => (
+                      <option key={destination.slug} value={destination.name}>
+                        {destination.name} ({destination.province})
                       </option>
                     ))}
                   </select>
@@ -446,12 +520,12 @@ export function ExperiencesListing({
                 <div>
                   <div className="flex items-center justify-between text-xs mb-2">
                     <span className="font-bold uppercase tracking-wider text-muted-foreground">Max Price</span>
-                    <span className="font-semibold text-primary">R {priceRange}</span>
+                    <span className="font-semibold text-primary">R {priceRange.toLocaleString()}</span>
                   </div>
                   <input
                     aria-label="Price range filter"
                     className="w-full accent-primary"
-                    max="3000"
+                    max={maximumPrice}
                     min="500"
                     onChange={(e) => setPriceRange(Number(e.target.value))}
                     step="100"
@@ -460,7 +534,7 @@ export function ExperiencesListing({
                   />
                   <div className="flex justify-between text-[11px] text-muted-foreground mt-1">
                     <span>R 500</span>
-                    <span>R 3,000+</span>
+                    <span>R {maximumPrice.toLocaleString()}+</span>
                   </div>
                 </div>
 
@@ -469,54 +543,34 @@ export function ExperiencesListing({
                   <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-2" htmlFor={filterDurationId}>
                     Duration
                   </label>
-                  <select className="ui-select text-xs" defaultValue="any" id={filterDurationId}>
+                  <select
+                    className="ui-select text-xs"
+                    id={filterDurationId}
+                    onChange={(event) => setDurationFilter(event.target.value)}
+                    value={durationFilter}
+                  >
                     <option value="any">Any Duration</option>
                     <option value="short">Under 3 hours</option>
-                    <option value="half">Half day (3–5 hours)</option>
+                    <option value="half">3 to under 6 hours</option>
                     <option value="full">Full day (6+ hours)</option>
                   </select>
                 </div>
 
-                {/* Tour Features Checkboxes */}
-                <div className="space-y-3 border-t border-border/60 pt-5">
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
-                    Experience Type
-                  </span>
-                  <label className="flex items-center gap-2.5 text-xs font-medium cursor-pointer">
-                    <input
-                      checked={familyFriendly}
-                      className="size-4 rounded border-border text-primary focus:ring-ring"
-                      onChange={(e) => setFamilyFriendly(e.target.checked)}
-                      type="checkbox"
-                    />
-                    <span>Family friendly</span>
-                  </label>
-                  <label className="flex items-center gap-2.5 text-xs font-medium cursor-pointer">
-                    <input
-                      checked={privateTour}
-                      className="size-4 rounded border-border text-primary focus:ring-ring"
-                      onChange={(e) => setPrivateTour(e.target.checked)}
-                      type="checkbox"
-                    />
-                    <span>Private tour available</span>
-                  </label>
-                </div>
-
-                {/* Languages Filter */}
                 <div className="border-t border-border/60 pt-5">
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-2.5">
-                    Guide Languages
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {languageOptions.map((lang) => (
-                      <span
-                        className="rounded-full bg-secondary px-2.5 py-1 text-[11px] font-medium text-foreground"
-                        key={lang}
-                      >
-                        {lang}
-                      </span>
+                  <label className="mb-2.5 block text-xs font-bold uppercase tracking-wider text-muted-foreground" htmlFor={filterLanguageId}>
+                    Guide language
+                  </label>
+                  <select
+                    className="ui-select text-xs"
+                    id={filterLanguageId}
+                    onChange={(event) => setSelectedLanguage(event.target.value)}
+                    value={selectedLanguage}
+                  >
+                    <option value="">Any language</option>
+                    {languageOptions.map((language) => (
+                      <option key={language} value={language}>{language}</option>
                     ))}
-                  </div>
+                  </select>
                 </div>
 
               </GlassPanel>
@@ -524,31 +578,12 @@ export function ExperiencesListing({
 
             {/* Experience Grid & Split Map */}
             <div>
-              {/* Optional Map Placeholder Preview */}
-              {showMap ? (
-                <div className="relative mb-8 h-80 w-full overflow-hidden rounded-3xl border border-border bg-[#e5ece4] p-6 text-center dark:bg-[#1a2720]">
-                  <div
-                    aria-hidden="true"
-                    className="experience-map-grid absolute inset-0 opacity-40"
-                  />
-                  <div className="relative flex h-full flex-col items-center justify-center">
-                    <span className="grid size-12 place-items-center rounded-full bg-primary text-white shadow-lg">
-                      <MapPin size={24} />
-                    </span>
-                    <h3 className="mt-3 font-display text-xl font-semibold">Interactive Map View</h3>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Displaying {filteredExperiences.length} guided tour meeting points across South Africa
-                    </p>
-                  </div>
-                </div>
-              ) : null}
-
               {/* Grid */}
-              {sortedExperiences.length > 0 ? (
+              {pagedExperiences.length > 0 ? (
                 <div className="experiences-grid grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                  {sortedExperiences.map((exp) => (
+                  {pagedExperiences.map((exp) => (
                     <ExperienceCard
-                      href={`/experiences/${exp.slug}`}
+                      href={`/experiences/${exp.slug}${searchCriteriaString ? `?${searchCriteriaString}` : ""}`}
                       key={exp.slug}
                       {...exp}
                     />
@@ -577,7 +612,10 @@ export function ExperiencesListing({
                       setSelectedCategory("All");
                       setSelectedDestination("");
                       setSelectedProvince("");
-                      setPriceRange(3000);
+                      setPriceRange(maximumPrice);
+                      setSelectedLanguage("");
+                      setDurationFilter("any");
+                      setCurrentPage(1);
                     }}
                   >
                     Reset all filters
@@ -585,61 +623,39 @@ export function ExperiencesListing({
                 </div>
               )}
 
-              {/* Pagination UI */}
-              <div className="mt-12 flex items-center justify-center gap-2 border-t border-border/60 pt-8">
-                <Button
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(1)}
-                  size="sm"
-                  variant="outline"
-                >
-                  Previous
-                </Button>
-                {[1, 2, 3].map((page) => (
+              {pageCount > 1 ? (
+                <nav aria-label="Experience pages" className="mt-12 flex items-center justify-center gap-2 border-t border-border/60 pt-8">
                   <Button
-                    className={cn(currentPage === page && "bg-primary text-white font-semibold")}
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
+                    disabled={currentPage <= 1}
+                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                     size="sm"
-                    variant={currentPage === page ? "primary" : "ghost"}
+                    variant="outline"
                   >
-                    {page}
+                    Previous
                   </Button>
-                ))}
-                <Button
-                  onClick={() => setCurrentPage(2)}
-                  size="sm"
-                  variant="outline"
-                >
-                  Next
-                </Button>
-              </div>
+                  {Array.from({ length: pageCount }, (_, index) => index + 1).map((page) => (
+                    <Button
+                      aria-current={currentPage === page ? "page" : undefined}
+                      className={cn(currentPage === page && "bg-primary text-white font-semibold")}
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      size="sm"
+                      variant={currentPage === page ? "primary" : "ghost"}
+                    >
+                      {page}
+                    </Button>
+                  ))}
+                  <Button
+                    disabled={currentPage >= pageCount}
+                    onClick={() => setCurrentPage((page) => Math.min(pageCount, page + 1))}
+                    size="sm"
+                    variant="outline"
+                  >
+                    Next
+                  </Button>
+                </nav>
+              ) : null}
             </div>
-          </div>
-        </Container>
-      </Section>
-
-      {/* Recently Viewed Carousel Section */}
-      <Section className="border-t border-border/60 bg-secondary/30" spacing="default">
-        <Container>
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Your Travel Path</p>
-              <h2 className="mt-1 font-display text-2xl font-semibold sm:text-3xl">Recently Viewed</h2>
-            </div>
-            <Link className="text-xs font-semibold text-primary hover:underline" href="/destinations">
-              Explore more destinations →
-            </Link>
-          </div>
-
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {experiences.slice(0, 4).map((exp) => (
-              <ExperienceCard
-                href={`/experiences/${exp.slug}`}
-                key={`recent-${exp.slug}`}
-                {...exp}
-              />
-            ))}
           </div>
         </Container>
       </Section>
@@ -689,10 +705,10 @@ export function ExperiencesListing({
               </div>
 
               <div>
-                <span className="text-xs font-bold uppercase text-muted-foreground block mb-2">Max Budget: R {priceRange}</span>
+                <span className="text-xs font-bold uppercase text-muted-foreground block mb-2">Max Budget: R {priceRange.toLocaleString()}</span>
                 <input
                   className="w-full accent-primary"
-                  max="3000"
+                  max={maximumPrice}
                   min="500"
                   onChange={(e) => setPriceRange(Number(e.target.value))}
                   type="range"
@@ -700,15 +716,36 @@ export function ExperiencesListing({
                 />
               </div>
 
-              <div className="space-y-3 pt-3 border-t border-border">
-                <label className="flex items-center gap-2 text-xs font-medium">
-                  <input
-                    checked={familyFriendly}
-                    onChange={(e) => setFamilyFriendly(e.target.checked)}
-                    type="checkbox"
-                  />
-                  <span>Family friendly</span>
+              <div>
+                <label className="mb-2 block text-xs font-bold uppercase text-muted-foreground" htmlFor="mobile-filter-language">
+                  Guide language
                 </label>
+                <select
+                  className="ui-select text-xs"
+                  id="mobile-filter-language"
+                  onChange={(event) => setSelectedLanguage(event.target.value)}
+                  value={selectedLanguage}
+                >
+                  <option value="">Any language</option>
+                  {languageOptions.map((language) => <option key={language} value={language}>{language}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-xs font-bold uppercase text-muted-foreground" htmlFor="mobile-filter-duration">
+                  Duration
+                </label>
+                <select
+                  className="ui-select text-xs"
+                  id="mobile-filter-duration"
+                  onChange={(event) => setDurationFilter(event.target.value)}
+                  value={durationFilter}
+                >
+                  <option value="any">Any duration</option>
+                  <option value="short">Under 3 hours</option>
+                  <option value="half">3 to under 6 hours</option>
+                  <option value="full">6+ hours</option>
+                </select>
               </div>
             </div>
 

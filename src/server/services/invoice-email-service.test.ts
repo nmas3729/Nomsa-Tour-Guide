@@ -98,7 +98,7 @@ beforeEach(() => {
   sendMock.mockResolvedValue({ data: { id: "email-id" }, error: null });
 });
 
-describe("approved booking invoice email", () => {
+describe("approved booking receipt email", () => {
   it("sends one attached PDF from the configured billing sender after approval", async () => {
     await sendApprovedBookingInvoice("NOM-ABC123");
 
@@ -107,10 +107,10 @@ describe("approved booking invoice email", () => {
       expect.objectContaining({
         from: "billing@nomsatourguides.co.za",
         to: "alex@example.com",
-        subject: "Invoice for booking NOM-ABC123",
+        subject: "Payment receipt for booking NOM-ABC123",
         text: expect.stringContaining("Payment status: SUCCEEDED"),
         attachments: [expect.objectContaining({
-          filename: "invoice-NOM-ABC123.pdf",
+          filename: "receipt-NOM-ABC123.pdf",
           content: expect.any(String),
         })],
       }),
@@ -153,7 +153,7 @@ describe("approved booking invoice email", () => {
     sendMock.mockResolvedValue({ data: null, error: { name: "ResendError" } });
 
     await expect(sendApprovedBookingInvoice("NOM-ABC123")).rejects.toThrow(
-      "Resend invoice email failed: ResendError",
+      "Resend receipt email failed: ResendError",
     );
 
     expect(updatePaymentMock).toHaveBeenCalledWith(expect.objectContaining({

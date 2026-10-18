@@ -30,16 +30,12 @@ export async function POST(request: Request) {
       return new Response(result.reason || "Invalid ITN notification", { status: 400 });
     }
 
-    if (
-      itnData.payment_status === "COMPLETE" &&
-      itnData.m_payment_id &&
-      !("latePayment" in result && result.latePayment)
-    ) {
+    if (itnData.payment_status === "COMPLETE" && itnData.m_payment_id) {
       try {
         await sendApprovedBookingInvoice(itnData.m_payment_id);
       } catch (error) {
         console.error(JSON.stringify({
-          event: "booking.invoice_email.failed",
+          event: "booking.receipt_email.failed",
           errorName: error instanceof Error ? error.name : "UnknownError",
         }));
       }

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Clock3, Heart, MapPin, Star } from "lucide-react";
+import { Clock3, MapPin, Star } from "lucide-react";
 import { formatCurrency } from "@/src/lib/format";
 import { imageAlt } from "@/src/lib/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/components/ui/avatar";
@@ -23,7 +23,7 @@ export function ExperienceCard({
 }: {
   title: string;
   destination: string;
-  image: string;
+  image?: string;
   imageDescription?: string;
   href?: string | null;
   duration: string;
@@ -41,14 +41,22 @@ export function ExperienceCard({
     <>
       {/* Photography & Overlays */}
       <div className="experience-card-image-wrap relative isolate aspect-[4/3] w-full overflow-hidden bg-muted">
-        <Image
-          alt={imageAlt(imageDescription)}
-          className="experience-card-image object-cover transition-transform duration-700 ease-out group-hover:scale-105 motion-reduce:transform-none motion-reduce:transition-none"
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          src={image}
-        />
-        <div aria-hidden="true" className="experience-card-image-shade absolute inset-0 z-20 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-70 transition-opacity duration-500 group-hover:opacity-55 motion-reduce:transition-none" />
+        {image ? (
+          <>
+            <Image
+              alt={imageAlt(imageDescription)}
+              className="experience-card-image object-cover transition-transform duration-700 ease-out group-hover:scale-105 motion-reduce:transform-none motion-reduce:transition-none"
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              src={image}
+            />
+            <div aria-hidden="true" className="experience-card-image-shade absolute inset-0 z-20 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-70 transition-opacity duration-500 group-hover:opacity-55 motion-reduce:transition-none" />
+          </>
+        ) : (
+          <div className="absolute inset-0 grid place-items-center bg-secondary text-xs text-muted-foreground">
+            Photo not provided
+          </div>
+        )}
 
         {/* Category Pill */}
         {category ? (
@@ -56,19 +64,6 @@ export function ExperienceCard({
             {category}
           </span>
         ) : null}
-
-        {/* Wishlist Button */}
-        <button
-          aria-label="Save to wishlist"
-          className="experience-card-wishlist absolute right-4 top-4 z-30 grid size-10 place-items-center rounded-full shadow-md backdrop-blur-md transition-all duration-300 hover:scale-110 active:scale-95 motion-reduce:transform-none motion-reduce:transition-none"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          type="button"
-        >
-          <Heart aria-hidden="true" size={16} />
-        </button>
 
         {/* Destination Pill on image bottom */}
         <div className="experience-card-destination absolute bottom-3 left-3 z-30 flex max-w-[calc(100%-1.5rem)] items-start gap-2 rounded-2xl px-3 py-2 text-xs font-medium text-white backdrop-blur-md sm:bottom-4 sm:left-4">

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { Prisma } from "@/src/server/db/generated/client";
-import { AuthTokenType, GuideApplicationStatus, UserRole } from "@/src/server/db/generated/enums";
+import { AuthTokenType, UserRole } from "@/src/server/db/generated/enums";
 import { getPrismaClient } from "@/src/server/db/prisma";
 import {
   guideRegistrationSchema,
@@ -17,7 +17,6 @@ import {
   hashOpaqueToken,
 } from "@/src/features/auth/lib/tokens";
 import { sendPasswordResetEmail, sendVerificationEmail, sendWelcomeEmail } from "./email";
-import { sendGuideApplicationReviewEmail } from "./guide-application-email";
 import type { AuthenticatedPrincipal } from "@/src/features/auth/types";
 import { requiresAuthenticatorApp } from "@/src/features/auth/lib/privileged-mfa";
 import { decryptTotpSecret, encryptTotpSecret } from "@/src/features/auth/lib/totp-crypto";
@@ -123,7 +122,7 @@ export async function registerAccount(input: RegistrationInput) {
               specialties: splitList(guide.specialties),
               languages: splitList(guide.languages),
               operatingAreas: splitList(guide.operatingAreas),
-              verificationStatus: GuideApplicationStatus.PENDING,
+              verificationStatus: "DRAFT",
             },
           },
           guideApplications: {
@@ -135,7 +134,7 @@ export async function registerAccount(input: RegistrationInput) {
               email: guide.email,
               biography: guide.biography,
               yearsExperience: guide.yearsExperience,
-              status: GuideApplicationStatus.PENDING,
+              status: "DRAFT",
               specialties: splitList(guide.specialties),
               languages: splitList(guide.languages),
               operatingAreas: splitList(guide.operatingAreas),
@@ -148,18 +147,6 @@ export async function registerAccount(input: RegistrationInput) {
       });
     });
 
-    let reviewEmailSent = false;
-    if (guideApplication) {
-      try {
-        await sendGuideApplicationReviewEmail(guideApplication);
-        reviewEmailSent = true;
-      } catch (error) {
-        createAuthEventLogger("guide_application.email_failed", {
-          errorName: error instanceof Error ? error.name : "UnknownError",
-        });
-      }
-    }
-
     const token = await issueAuthToken(user.id, AuthTokenType.EMAIL_VERIFICATION);
     await sendVerificationEmail(values.name, values.email, token);
     createAuthEventLogger("registration", { outcome: "created", role: values.role });
@@ -167,9 +154,7 @@ export async function registerAccount(input: RegistrationInput) {
     return {
       success: true as const,
       message: guideApplication
-        ? reviewEmailSent
-          ? "Your guide application has been submitted for manual review. The Nomsa team will share next steps after reviewing it. Submission does not guarantee approval or publication."
-          : "Your guide application is saved as pending review, but delivery to the review inbox could not be confirmed. Please contact us if you do not receive your email verification link."
+        ? "Your guide account is saved as a private draft. Verify your email, complete the four onboarding steps, and submit them for manual review."
         : "If this email can be registered, a verification link will arrive shortly.",
     };
   } catch (error) {
@@ -379,8 +364,7 @@ export async function authenticateCredentials(email: string, password: string, t
     !user.emailVerified ||
     !user.isActive ||
     user.deletedAt ||
-    (user.role === UserRole.GUIDE &&
-      user.guideProfile?.verificationStatus !== GuideApplicationStatus.APPROVED)
+    (user.role === UserRole.GUIDE && !user.guideProfile)
   ) {
     createAuthEventLogger("login", { outcome: "rejected" });
     return null;
@@ -458,8 +442,7 @@ export async function validateActivePrincipal(principal: AuthenticatedPrincipal)
     (requiresAuthenticatorApp(user.role) &&
       user.totpEnabledAt !== null &&
       !principal.mfaVerified) ||
-    (user.role === UserRole.GUIDE &&
-      user.guideProfile?.verificationStatus !== GuideApplicationStatus.APPROVED)
+    (user.role === UserRole.GUIDE && !user.guideProfile)
   ) {
     return null;
   }

@@ -1,7 +1,9 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { UserRole } from "@/src/server/db/generated/enums";
 import { isInvoiceAvailable } from "@/src/components/booking/booking-confirmation-state";
+import { getCurrentUser } from "@/src/lib/auth/session";
 import { getBookingConfirmation } from "@/src/server/services/booking-service";
 import { generateInvoicePdf, invoiceDocumentData } from "@/src/server/services/invoice-pdf-service";
 
@@ -17,7 +19,9 @@ export async function GET(
   try {
     const access = await cookies();
     const key = access.get(`booking-access-${id}`)?.value;
-    const booking = await getBookingConfirmation(id, key);
+    const principal = await getCurrentUser();
+    const customerId = principal?.role === UserRole.CUSTOMER ? principal.id : undefined;
+    const booking = await getBookingConfirmation(id, key, customerId);
     if (!booking) {
       return NextResponse.json(
         { error: "Invoice not available." },
@@ -26,7 +30,7 @@ export async function GET(
     }
     if (!isInvoiceAvailable(booking)) {
       return NextResponse.json(
-        { error: "An invoice is available only for an approved payment." },
+        { error: "A receipt is available only for a payment recorded as received." },
         { status: 409, headers: { "Cache-Control": "private, no-store" } },
       );
     }
@@ -36,7 +40,7 @@ export async function GET(
     return new Response(new Uint8Array(pdf), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="invoice-${reference || id}.pdf"`,
+        "Content-Disposition": `attachment; filename="receipt-${reference || id}.pdf"`,
         "Cache-Control": "private, no-store",
       },
     });
