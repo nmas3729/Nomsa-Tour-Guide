@@ -16,3 +16,15 @@
 - Playwright visible-text check confirms full section structure
 
 **Do not reintroduce `<Suspense>` around `<HomePage />` without testing PPR behaviour on a Coolify deployment first.**
+
+## npm audit — dev-only vulnerabilities (2026-10-18)
+
+`npm audit --omit=dev` → **0 vulnerabilities** (production is clean).
+
+Full `npm audit` reports 8 findings, all in dev tooling:
+- `tinypool` (critical, ×2) — Vitest worker pool
+- `braces` (high) — via `eslint-config-next` glob matching
+- `@vitest/mocker` (moderate) — Vitest mock helper
+- `vitest` (transitive)
+
+**Action:** none required for production. Do not run `npm audit fix --force` — it downgrades `eslint-config-next` from 16 to 14 (breaking) and major-bumps `vitest`. Revisit when `vitest` and `eslint-config-next` release patched versions of the vulnerable transitive deps.
