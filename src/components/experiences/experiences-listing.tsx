@@ -280,7 +280,7 @@ export function ExperiencesListing({
                   <option className="bg-[#0d1117] text-white" value="1500">Up to R 1,500</option>
                   <option className="bg-[#0d1117] text-white" value="2000">Up to R 2,000</option>
                   <option className="bg-[#0d1117] text-white" value={maximumPrice}>
-                    Up to R {maximumPrice.toLocaleString()}+
+                    Up to R {maximumPrice.toLocaleString("en-ZA")}+
                   </option>
                 </select>
               </div>
@@ -520,7 +520,7 @@ export function ExperiencesListing({
                 <div>
                   <div className="flex items-center justify-between text-xs mb-2">
                     <span className="font-bold uppercase tracking-wider text-muted-foreground">Max Price</span>
-                    <span className="font-semibold text-primary">R {priceRange.toLocaleString()}</span>
+                    <span className="font-semibold text-primary">R {priceRange.toLocaleString("en-ZA")}</span>
                   </div>
                   <input
                     aria-label="Price range filter"
@@ -534,7 +534,7 @@ export function ExperiencesListing({
                   />
                   <div className="flex justify-between text-[11px] text-muted-foreground mt-1">
                     <span>R 500</span>
-                    <span>R {maximumPrice.toLocaleString()}+</span>
+                    <span>R {maximumPrice.toLocaleString("en-ZA")}+</span>
                   </div>
                 </div>
 
@@ -705,7 +705,7 @@ export function ExperiencesListing({
               </div>
 
               <div>
-                <span className="text-xs font-bold uppercase text-muted-foreground block mb-2">Max Budget: R {priceRange.toLocaleString()}</span>
+                <span className="text-xs font-bold uppercase text-muted-foreground block mb-2">Max Budget: R {priceRange.toLocaleString("en-ZA")}</span>
                 <input
                   className="w-full accent-primary"
                   max={maximumPrice}
