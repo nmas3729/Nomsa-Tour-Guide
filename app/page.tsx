@@ -1,6 +1,5 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
-import { HomePage, HomePageFallback } from "@/src/components/marketing/home-page";
+import { HomePage } from "@/src/components/marketing/home-page";
 import { PublicLayout } from "@/src/components/marketing/public-layout";
 import { publicPageMetadata } from "@/src/lib/seo";
 
@@ -13,9 +12,7 @@ export const metadata: Metadata = publicPageMetadata({
 export default function Page() {
   return (
     <PublicLayout>
-      <Suspense fallback={<HomePageFallback />}>
-        <HomePage />
-      </Suspense>
+      <HomePage />
     </PublicLayout>
   );
 }
