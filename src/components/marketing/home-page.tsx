@@ -343,7 +343,10 @@ function PopularDestinationsSection({
                     {featured.description}
                   </p>
                   <div className="mt-6 flex items-center justify-between">
-                    <Button asChild className="bg-white text-foreground hover:bg-white/90">
+                    <Button
+                      asChild
+                      className="bg-accent text-white shadow-xl shadow-accent/25 hover:bg-accent/90"
+                    >
                       <Link href="/destinations">Explore {featured.name} →</Link>
                     </Button>
                   </div>
@@ -677,3 +680,29 @@ export async function HomePage() {
     </>
   );
 }
+
+export function HomePageFallback() {
+  return (
+    <section
+      aria-busy="true"
+      className="home-hero relative isolate -mt-20 flex min-h-[100svh] flex-col justify-center overflow-hidden bg-[#040706] text-white"
+    >
+      <div aria-hidden="true" className="home-hero-vignette absolute inset-0 -z-10" />
+      <Container className="pb-20 pt-36 sm:pt-44 lg:pt-48">
+        <span className="home-hero-kicker inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-white">
+          SOUTH AFRICA
+        </span>
+        <h1 className="home-hero-title mt-6 w-full max-w-none font-display text-4xl font-medium leading-[1.02] tracking-tight sm:text-6xl md:whitespace-nowrap md:text-7xl lg:text-[clamp(5rem,8.4vw,7.5rem)]">
+          Through <span className="home-hero-title-accent whitespace-nowrap italic">Local Eyes.</span>
+        </h1>
+        <p className="mt-6 max-w-2xl text-base leading-relaxed text-white/85 sm:text-lg md:text-xl">
+          Walks, tastings, and safaris from the Cape to Greater Kruger.
+        </p>
+        <p className="mt-6 text-sm text-white/75" role="status">
+          Loading approved experiences and local guides…
+        </p>
+      </Container>
+    </section>
+  );
+}
+
