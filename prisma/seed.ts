@@ -269,6 +269,16 @@ async function seed() {
   if (!admin || !customer) throw new Error("Seed admin or customer user is missing.");
 
   await upsertTracked(
+    "Admin customer profile",
+    () => prismaClient.customerProfile.findUnique({ where: { userId: admin.id } }),
+    () => prismaClient.customerProfile.upsert({
+      where: { userId: admin.id },
+      update: { preferredCurrency: "ZAR", preferredLanguages: ["English"] },
+      create: { userId: admin.id, preferredCurrency: "ZAR", preferredLanguages: ["English"] },
+    }),
+  );
+
+  await upsertTracked(
     "Customer profiles",
     () => prismaClient.customerProfile.findUnique({ where: { userId: customer.id } }),
     () => prismaClient.customerProfile.upsert({
