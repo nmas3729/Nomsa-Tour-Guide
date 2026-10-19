@@ -517,7 +517,7 @@ export function BecomeGuidePage() {
                 </Link>
               </Button>
               <p className="mt-3 max-w-lg text-xs leading-5 text-muted-foreground">
-                Applications go to a dedicated review inbox, separate from general enquiries. The Nomsa team reviews
+                Applications go to a dedicated review inbox, separate from general enquiries. The Nomsa Tour Guides team reviews
                 each one manually: pending, under review, then approved or rejected. Approved profiles require a
                 separate publication step; not every application is published.
               </p>

@@ -628,7 +628,7 @@ function BecomeGuideSection() {
               Turn your hometown into someone&apos;s favourite memory.
             </h2>
             <p className="mt-4 max-w-xl text-base leading-relaxed text-white/85 sm:text-lg">
-              Apply to share your local knowledge with travellers. Every application is reviewed by the Nomsa team.
+              Apply to share your local knowledge with travellers. Every application is reviewed by the Nomsa Tour Guides team.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Button asChild className="bg-accent text-accent-foreground shadow-xl hover:bg-accent/90" size="lg">

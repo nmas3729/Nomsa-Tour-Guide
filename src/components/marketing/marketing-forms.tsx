@@ -109,7 +109,7 @@ export function ContactForm() {
           {!isSubmitting ? <Send aria-hidden="true" size={16} /> : null}
         </Button>
         <p aria-live="polite" className="text-xs leading-5 text-muted-foreground" role="status">
-          {message || "Your message will be sent to the Nomsa team."}
+          {message || "Your message will be sent to the Nomsa Tour Guides team."}
         </p>
       </div>
       <p className="text-xs leading-5 text-muted-foreground">

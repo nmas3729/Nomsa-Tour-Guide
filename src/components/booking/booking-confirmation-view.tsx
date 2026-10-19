@@ -99,7 +99,7 @@ export function BookingConfirmationView() {
               </Button>
               {loadError ? (
                 <Button asChild variant="outline">
-                  <Link href="/contact">Contact Nomsa</Link>
+                  <Link href="/contact">Contact Nomsa Tour Guides</Link>
                 </Button>
               ) : null}
             </div>
@@ -350,7 +350,7 @@ export function BookingConfirmationView() {
                     : booking.paymentStatus === "PENDING" || booking.paymentStatus === "PROCESSING"
                       ? "The latest recorded payment is still pending. This page reflects the current booking status and does not confirm payment."
                       : booking.paymentStatus === "REFUND_PENDING" || booking.paymentStatus === "REFUNDED"
-                        ? "The booking and payment statuses above reflect the latest details available here. Contact Nomsa with your reference if you need help understanding this payment update."
+                        ? "The booking and payment statuses above reflect the latest details available here. Contact Nomsa Tour Guides with your reference if you need help understanding this payment update."
                         : "This booking is not confirmed. Check the current payment status before making another booking."}
                 </p>
                 <div className="mt-3 border-t border-border/50 pt-3">
@@ -382,7 +382,7 @@ export function BookingConfirmationView() {
                   <Link href="/experiences">Explore more South African experiences</Link>
                 </Button>
                 <Button asChild className="min-h-12 rounded-full" variant="outline">
-                  <Link href="/contact">Contact Nomsa support</Link>
+                  <Link href="/contact">Contact Nomsa Tour Guides support</Link>
                 </Button>
                 {booking.paymentStatus === "FAILED" || booking.paymentStatus === "CANCELLED" ? (
                   <Link

@@ -183,6 +183,13 @@ export async function getApprovedExperienceDetail(
     },
   });
   if (!row) return null;
+  if (row.meetingPoint) {
+    console.warn(JSON.stringify({
+      event: "experience.meeting_point.coordinates_unavailable",
+      experienceSlug: row.slug,
+      reason: "The Experience model does not store meeting-point coordinates.",
+    }));
+  }
   const [reviewSummary, reviews] = await Promise.all([
     getPrismaClient().review.aggregate({
       where: { experienceId: row.id, status: ReviewStatus.APPROVED, deletedAt: null },

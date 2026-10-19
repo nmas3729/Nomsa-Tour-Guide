@@ -249,7 +249,7 @@ describe("BookingConfirmationView", () => {
 
     expect(await screen.findByRole("heading", { name: "Booking not available" })).toBeInTheDocument();
     expect(screen.getByText("This booking could not be found or is no longer available.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Contact Nomsa" })).toHaveAttribute("href", "/contact");
+    expect(screen.getByRole("link", { name: "Contact Nomsa Tour Guides" })).toHaveAttribute("href", "/contact");
   });
 
   it("asks for a booking reference when the confirmation URL has none", async () => {

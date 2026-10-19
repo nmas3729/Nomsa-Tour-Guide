@@ -392,7 +392,7 @@ export function GuideOnboardingForm({ status: initialStatus }: { status: GuideAp
           </span>
           {onboarding?.adminNotes ? (
             <p className="w-full rounded-xl border border-border/60 bg-secondary/40 p-3 text-sm">
-              Nomsa team note: {onboarding.adminNotes}
+              Nomsa Tour Guides team note: {onboarding.adminNotes}
             </p>
           ) : null}
         </CardContent>
@@ -528,7 +528,7 @@ export function GuideOnboardingForm({ status: initialStatus }: { status: GuideAp
 
       <SectionCard title="Step 4 — Approval status">
         <p className="text-sm leading-relaxed text-muted-foreground">
-          The Nomsa team reviews guide applications and experiences separately. Submitting does not publish either one. Only experiences explicitly approved and published with an approved guide can be booked.
+          The Nomsa Tour Guides team reviews guide applications and experiences separately. Submitting does not publish either one. Only experiences explicitly approved and published with an approved guide can be booked.
         </p>
         <div className="rounded-xl border border-border/70 bg-secondary/30 p-4">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Experience review status</p>

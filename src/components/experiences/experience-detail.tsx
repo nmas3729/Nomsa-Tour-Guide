@@ -70,7 +70,7 @@ export function ExperienceDetail({
   }
 
   return (
-    <article className="bg-background text-foreground">
+    <article className="bg-background pb-24 text-foreground md:pb-0">
       {/* Breadcrumb Navigation */}
       <div className="border-b border-border/60 bg-card/60 py-3 text-xs">
         <Container className="flex items-center gap-2 text-muted-foreground">
@@ -706,6 +706,20 @@ export function ExperienceDetail({
           </div>
         </div>
       ) : null}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 md:hidden">
+        <div className="mx-auto flex max-w-screen-sm items-center gap-4">
+          <p className="shrink-0 text-xs text-muted-foreground">
+            From <span className="font-display text-lg font-bold text-foreground">{formatCurrency(data.price)}</span>
+          </p>
+          <Button
+            asChild
+            className="min-h-12 flex-1 rounded-full bg-accent text-base font-semibold text-accent-foreground hover:bg-accent/90"
+            size="lg"
+          >
+            <Link href={bookingHref}>Check availability</Link>
+          </Button>
+        </div>
+      </div>
     </article>
   );
 }

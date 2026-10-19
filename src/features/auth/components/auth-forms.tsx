@@ -91,7 +91,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
       </div>
       {notice ? <AuthNotice message={notice.message} success={notice.success} /> : null}
       <AuthSubmitButton pending={form.formState.isSubmitting}>Sign in</AuthSubmitButton>
-      <p className="auth-switch">New to Nomsa? <Link href="/register">Create an account</Link></p>
+      <p className="auth-switch">New to Nomsa Tour Guides? <Link href="/register">Create an account</Link></p>
     </form>
   );
 }
@@ -154,7 +154,7 @@ export function RegistrationForm() {
       {guideRegistration ? (
         <>
           <p className="auth-hint">
-            Guide applications are reviewed manually by the Nomsa team. Approval does not automatically publish a profile.
+            Guide applications are reviewed manually by the Nomsa Tour Guides team. Approval does not automatically publish a profile.
           </p>
           <AuthField id="register-phone" label="Phone" error={form.formState.errors.phone?.message}>
             <Input autoComplete="tel" id="register-phone" type="tel" {...form.register("phone")} />

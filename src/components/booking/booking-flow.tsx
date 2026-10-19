@@ -684,7 +684,7 @@ export function BookingFlow({
                     <div className="flex items-start gap-3 rounded-2xl border border-primary/15 bg-primary/5 p-4 text-sm text-muted-foreground">
                       <Lock aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-primary" />
                       <p>
-                        Card and payment details are entered directly on PayFast. Nomsa does not ask you to enter card details here.
+                        Card and payment details are entered directly on PayFast. Nomsa Tour Guides does not ask you to enter card details here.
                       </p>
                     </div>
                   </div>
