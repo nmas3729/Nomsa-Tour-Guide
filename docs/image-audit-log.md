@@ -31,4 +31,4 @@ No stock portraits are assigned to named guides. The six static guide records in
 
 ## Other image references
 
-`src/components/navigation/brand-mark.tsx` uses `/logo.png`, `app/favicon.ico` is the site icon, and the remaining public SVGs are generic decorative starter icons. They are not destination or experience photographs and were left unchanged. The CSS image patterns found in `app/globals.css` and `src/components/experiences/experiences-listing.tsx` are generated gradients/patterns, not photographic backgrounds. No other raster photo URLs or CSS photo backgrounds were found.
+`src/components/navigation/brand-mark.tsx` uses the optimized `/logo.webp`, and `app/favicon.ico` is the site icon. The generic decorative starter SVGs were unreferenced and removed. The CSS image patterns found in `app/globals.css` and `src/components/experiences/experiences-listing.tsx` are generated gradients/patterns, not photographic backgrounds. No other raster photo URLs or CSS photo backgrounds were found.

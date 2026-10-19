@@ -97,7 +97,7 @@ export function AboutPage() {
                   className="object-cover object-top"
                   fill
                   sizes="(max-width: 768px) calc(100vw - 2rem), 40vw"
-                  src="/images/nomsa.png"
+                  src="/images/nomsa.webp"
                 />
               </div>
               <div className="flex flex-col justify-center p-6 sm:p-10 lg:p-14">

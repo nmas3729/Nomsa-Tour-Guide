@@ -10,7 +10,7 @@ export function BrandMark({ className }: { className?: string }) {
         alt=""
         className="h-full w-full scale-[1.2] object-cover"
         height={768}
-        src="/logo.png"
+        src="/logo.webp"
         width={1408}
       />
     </span>
