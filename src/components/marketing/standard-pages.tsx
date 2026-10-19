@@ -127,9 +127,9 @@ export function AboutPage() {
           <div className="grid gap-5 md:grid-cols-2">
             <Card className="bg-primary text-primary-foreground shadow-none">
               <CardContent className="p-6 sm:p-8">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/70">Our Mission</p>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary-foreground/70">Our Mission</p>
                 <h2 className="mt-3 font-display text-2xl font-medium">Make local connection part of every journey.</h2>
-                <p className="mt-3 text-sm leading-6 text-white/80">
+                <p className="mt-3 text-sm leading-6 text-primary-foreground/80">
                   Support independent guides and connect travellers with local experiences.
                 </p>
               </CardContent>
@@ -251,22 +251,17 @@ export function ContactPage() {
                 </CardContent>
               </Card>
 
-              {/* Google Map Placeholder */}
-              <div
-                aria-label="Google Map placeholder showing South Africa"
-                className="relative flex min-h-64 flex-col items-center justify-center overflow-hidden rounded-2xl border border-border bg-[#e9eee7] p-6 text-center dark:bg-[#29382e]"
-                role="img"
-              >
-                <div
-                  aria-hidden="true"
-                  className="contact-map-grid absolute inset-0 opacity-50"
+              <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                <iframe
+                  allowFullScreen
+                  className="block min-h-64 w-full border-0"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src="https://maps.google.com/maps?output=embed&saddr=-33.9249%2C18.4241&daddr=-26.2041%2C28.0473"
+                  title="Approximate city-centre route between Cape Town and Johannesburg, South Africa"
                 />
-                <span className="relative grid size-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg">
-                  <MapPin aria-hidden="true" size={22} />
-                </span>
-                <p className="relative mt-4 font-display text-xl font-semibold">South Africa, our home</p>
-                <p className="relative mt-1 text-sm text-muted-foreground">
-                  Google Map Placeholder · 30.5595° S, 22.9375° E
+                <p className="px-4 py-3 text-xs text-muted-foreground">
+                  Approximate city-centre locations for our Cape Town and Johannesburg headquarters; these are not street addresses.
                 </p>
               </div>
             </div>
@@ -330,16 +325,18 @@ export async function GuidesPage() {
 
       <Section className="pt-6">
         <Container>
-          <div className="mb-7 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm font-medium text-foreground">
-              {guides.length} approved guide profiles
-            </p>
-          </div>
+          {guides.length > 0 ? (
+            <div className="mb-7 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm font-medium text-foreground">
+                {guides.length} approved guide profiles
+              </p>
+            </div>
+          ) : null}
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {guides.length ? guides.map((guide) => <GuideCard key={guide.name} {...guide} />) : (
               <p className="col-span-full rounded-2xl border border-border/60 bg-card p-6 text-sm text-muted-foreground">
-                Guide profiles will appear here after the Nomsa team approves and publishes them.
+                We&apos;re welcoming local guides now. Meet our first approved guides here soon.
               </p>
             )}
           </div>

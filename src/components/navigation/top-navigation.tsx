@@ -236,7 +236,7 @@ export function TopNavigation() {
               asChild
               className={cn(
                 isTransparent
-                  ? "bg-accent text-white hover:bg-accent/90 shadow-md shadow-accent/20"
+                  ? "bg-accent text-accent-foreground hover:bg-accent/90 shadow-md shadow-accent/20"
                   : "bg-primary text-primary-foreground hover:bg-primary/90",
               )}
             >

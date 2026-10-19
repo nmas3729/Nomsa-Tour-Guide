@@ -95,7 +95,7 @@ export function ExperienceCard({
 
               {rating !== undefined && (reviewCount ?? 0) > 0 ? (
                 <span className="flex items-center gap-1 font-semibold text-foreground">
-                  <Star aria-hidden="true" className="fill-accent text-accent" size={13} />
+                  <Star aria-hidden="true" className="fill-accent-strong text-accent-strong" size={13} />
                   {rating.toFixed(1)}
                   <span className="font-normal text-muted-foreground">({reviewCount})</span>
                 </span>

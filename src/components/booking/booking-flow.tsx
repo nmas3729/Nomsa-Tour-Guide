@@ -344,7 +344,7 @@ export function BookingFlow({
                       </div>
 
                       {totalGuests >= 10 ? (
-                        <p className="mt-3 text-xs text-highlight font-medium">
+                        <p className="mt-3 text-xs text-accent-strong font-medium">
                           Maximum group size is 10 guests to ensure intimacy and quality.
                         </p>
                       ) : null}
@@ -643,7 +643,7 @@ export function BookingFlow({
                       <ArrowLeft size={16} /> Back
                     </Button>
                     <Button
-                      className="flex-1 sm:flex-initial h-12 px-8 font-semibold bg-accent text-white hover:bg-accent/90"
+                      className="flex-1 sm:flex-initial h-12 px-8 font-semibold bg-accent text-accent-foreground hover:bg-accent/90"
                       onClick={() => setCurrentStep(4)}
                     >
                       <span>Proceed to Payment</span>
@@ -700,7 +700,7 @@ export function BookingFlow({
                       <ArrowLeft size={16} /> Back
                     </Button>
                     <Button
-                      className="flex-1 h-13 px-8 rounded-full font-bold text-base bg-accent text-white shadow-xl shadow-accent/25 hover:bg-accent/90"
+                      className="flex-1 h-13 px-8 rounded-full font-bold text-base bg-accent text-accent-foreground shadow-xl shadow-accent/25 hover:bg-accent/90"
                       disabled={isSubmitting}
                       onClick={handlePayFastCheckout}
                     >
@@ -800,7 +800,7 @@ export function BookingFlow({
           <span className="font-display text-xl font-bold text-primary">{formatCurrency(grandTotal)}</span>
         </div>
         <Button
-          className="h-11 px-6 font-semibold bg-accent text-white"
+          className="h-11 px-6 font-semibold bg-accent text-accent-foreground"
           disabled={isSubmitting}
           onClick={() => {
             if (currentStep === 1) dateFormRef.current?.requestSubmit();

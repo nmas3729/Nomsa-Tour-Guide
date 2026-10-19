@@ -4,6 +4,7 @@ import { Prisma } from "@/src/server/db/generated/client";
 import { PaymentStatus } from "@/src/server/db/generated/enums";
 import { requireBillingEmailEnvironment } from "@/src/config/env";
 import { getPrismaClient } from "@/src/server/db/prisma";
+import { formatCurrency } from "@/src/lib/format";
 import { Resend } from "resend";
 import {
   bookingInclude,
@@ -117,7 +118,10 @@ export async function sendApprovedBookingInvoice(paymentReference: string): Prom
           `Destination: ${claim.summary.destination}`,
           `Booking date: ${claim.summary.date} (${claim.summary.timeSlot})`,
           `Travellers: ${claim.summary.travellerCount}`,
-          `Amount: ${claim.summary.paidCurrency ?? claim.summary.currency} ${(claim.summary.paidAmount ?? claim.summary.totalPrice).toFixed(2)}`,
+          `Amount: ${formatCurrency(
+            claim.summary.paidAmount ?? claim.summary.totalPrice,
+            claim.summary.paidCurrency ?? claim.summary.currency,
+          )}`,
           `Payment status: ${claim.summary.paymentStatus}`,
           "",
           `For booking enquiries, WhatsApp ${BILLING_WHATSAPP_NUMBER} (${BILLING_WHATSAPP_URL}) or visit nomsatourguides.co.za.`,

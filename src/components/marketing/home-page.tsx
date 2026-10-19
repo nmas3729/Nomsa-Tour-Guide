@@ -106,6 +106,7 @@ function HomeHero({ guideCount, experienceCount }: { guideCount: number; experie
         className="home-hero-image absolute inset-0 -z-30 object-cover object-center"
         fill
         preload
+        quality={75}
         sizes="100vw"
         src="https://images.unsplash.com/photo-1580060839134-75a5edca2e99?auto=format&fit=crop&w=2600&q=90"
       />
@@ -133,7 +134,7 @@ function HomeHero({ guideCount, experienceCount }: { guideCount: number; experie
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-4">
-            <Button asChild className="bg-accent text-white shadow-2xl shadow-accent/30 hover:bg-accent/90" size="xl">
+            <Button asChild className="bg-accent text-accent-foreground shadow-2xl shadow-accent/30 hover:bg-accent/90" size="xl">
               <Link href="/experiences">
                 Search Experiences
                 <ArrowRight aria-hidden="true" size={18} />
@@ -215,7 +216,7 @@ function HomeHero({ guideCount, experienceCount }: { guideCount: number; experie
             {/* Search Button (Gold Accent) */}
             <Button
               aria-label="Search experiences"
-              className="home-search-submit flex h-14 items-center justify-center gap-2 rounded-2xl bg-accent px-8 text-base font-semibold text-white shadow-xl shadow-accent/25 transition-all duration-300 hover:scale-[1.02] hover:bg-accent/90 active:scale-95 lg:rounded-full"
+              className="home-search-submit flex h-14 items-center justify-center gap-2 rounded-2xl bg-accent px-8 text-base font-semibold text-accent-foreground shadow-xl shadow-accent/25 transition-all duration-300 hover:scale-[1.02] hover:bg-accent/90 active:scale-95 lg:rounded-full"
               size="lg"
               type="submit"
             >
@@ -230,14 +231,18 @@ function HomeHero({ guideCount, experienceCount }: { guideCount: number; experie
       {/* Animated Live Statistics Bar */}
       <div className="home-hero-stats border-t border-white/15 bg-black/40 backdrop-blur-lg">
         <Container className="grid grid-cols-2 gap-6 py-6 sm:grid-cols-4">
-          <div className="text-center sm:text-left">
-            <p className="font-display text-2xl font-bold tracking-tight text-[#f4cd9f] sm:text-3xl">{guideCount}</p>
-            <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-white/75">Approved Guides</p>
-          </div>
-          <div className="text-center sm:text-left">
-            <p className="font-display text-2xl font-bold tracking-tight text-[#f4cd9f] sm:text-3xl">{experienceCount}</p>
-            <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-white/75">Approved Experiences</p>
-          </div>
+          {guideCount > 0 ? (
+            <div className="text-center sm:text-left">
+              <p className="font-display text-2xl font-bold tracking-tight text-[#f4cd9f] sm:text-3xl">{guideCount}</p>
+              <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-white/75">Approved Guides</p>
+            </div>
+          ) : null}
+          {experienceCount > 0 ? (
+            <div className="text-center sm:text-left">
+              <p className="font-display text-2xl font-bold tracking-tight text-[#f4cd9f] sm:text-3xl">{experienceCount}</p>
+              <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-white/75">Approved Experiences</p>
+            </div>
+          ) : null}
           <div className="text-center sm:text-left">
             <p className="font-display text-2xl font-bold tracking-tight text-[#f4cd9f] sm:text-3xl">{provinces.length}</p>
             <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-white/75">Provinces in the Guide</p>
@@ -254,7 +259,7 @@ function HomeHero({ guideCount, experienceCount }: { guideCount: number; experie
         className="absolute bottom-24 left-1/2 hidden -translate-x-1/2 items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-white/70 transition-colors hover:text-white md:flex"
         href="#popular-destinations"
       >
-        Scroll <ArrowDown aria-hidden="true" size={14} />
+        Scroll         <ArrowDown aria-hidden="true" className="home-hero-scroll-icon" size={14} />
       </a>
     </section>
   );
@@ -345,7 +350,7 @@ function PopularDestinationsSection({
                   <div className="mt-6 flex items-center justify-between">
                     <Button
                       asChild
-                      className="bg-accent text-white shadow-xl shadow-accent/25 hover:bg-accent/90"
+                      className="bg-accent text-accent-foreground shadow-xl shadow-accent/25 hover:bg-accent/90"
                     >
                       <Link href="/destinations">Explore {featured.name} →</Link>
                     </Button>
@@ -389,9 +394,11 @@ function PopularDestinationsSection({
                   key={province}
                 >
                   <span className="min-w-0">{province}</span>
-                  <span className="shrink-0 text-[10px] font-medium text-muted-foreground sm:text-xs">
-                    {count > 0 ? `${count} listed` : "No listings yet"}
-                  </span>
+                  {count > 0 ? (
+                    <span className="shrink-0 text-[10px] font-medium text-muted-foreground sm:text-xs">
+                      {count} listed
+                    </span>
+                  ) : null}
                 </Link>
               );
             })}
@@ -409,7 +416,7 @@ function EditorialStorytellingBreak() {
       <Container>
         <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
           <SlideIn direction="left">
-            <span className="inline-block rounded-full bg-accent/20 px-3.5 py-1 text-xs font-bold uppercase tracking-[0.22em] text-accent">
+            <span className="inline-block rounded-full bg-accent/20 px-3.5 py-1 text-xs font-bold uppercase tracking-[0.22em] text-accent-strong">
               Our Philosophy
             </span>
             <h2 className="mt-5 font-display text-3xl font-medium leading-[1.15] tracking-tight sm:text-4xl lg:text-5xl">
@@ -464,7 +471,7 @@ function FeaturedExperiencesSection({
         </div>
         {!approvedExperiences.length ? (
           <p className="mt-6 text-sm text-muted-foreground">
-            New experiences appear here after both guide and experience review are complete.
+            We&apos;re onboarding local guides and adding our first experiences. Check back soon for new tours across South Africa.
           </p>
         ) : null}
       </Container>
@@ -492,7 +499,7 @@ function TopGuidesSection({ guides }: { guides: Awaited<ReturnType<typeof getApp
         </div>
         {!guides.length ? (
           <p className="mt-6 text-sm text-muted-foreground">
-            Guide profiles appear after the Nomsa team completes its review.
+            We&apos;re welcoming local guides now. Meet our first approved guides here soon.
           </p>
         ) : null}
       </Container>
@@ -624,7 +631,7 @@ function BecomeGuideSection() {
               Apply to share your local knowledge with travellers. Every application is reviewed by the Nomsa team.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
-              <Button asChild className="bg-accent text-white shadow-xl hover:bg-accent/90" size="lg">
+              <Button asChild className="bg-accent text-accent-foreground shadow-xl hover:bg-accent/90" size="lg">
                 <Link href="/become-a-guide">
                   Become a guide
                   <ArrowRight aria-hidden="true" size={18} />
@@ -705,4 +712,3 @@ export function HomePageFallback() {
     </section>
   );
 }
-

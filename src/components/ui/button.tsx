@@ -14,7 +14,7 @@ export const buttonVariants = cva(
         ghost: "ui-button-ghost text-foreground hover:bg-muted/60",
         link: "ui-button-link text-primary underline-offset-4 hover:underline p-0 h-auto",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        accent: "bg-accent text-white hover:bg-accent/90 hover:-translate-y-px active:translate-y-0",
+        accent: "bg-accent text-accent-foreground hover:bg-accent/90 hover:-translate-y-px active:translate-y-0",
       },
       size: {
         default: "h-12 px-6 text-[0.9375rem]",

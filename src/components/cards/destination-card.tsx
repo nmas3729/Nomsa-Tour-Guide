@@ -48,7 +48,7 @@ export function DestinationCard({
             <span className="max-w-40 rounded-full bg-white/20 px-2.5 py-0.5 text-right text-[10px] font-medium leading-tight tracking-wide text-white backdrop-blur-md sm:text-[11px]">
               {experiencesCount > 0
                 ? `${experiencesCount} ${experiencesCount === 1 ? "experience" : "experiences"}`
-                : "No experiences listed yet"}
+                : "New experiences coming soon"}
             </span>
           ) : null}
         </div>

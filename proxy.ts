@@ -14,6 +14,7 @@ function createContentSecurityPolicy(nonce: string): string {
     "style-src-attr 'unsafe-inline'",
     "img-src 'self' blob: data: https:",
     "font-src 'self' data:",
+    "frame-src 'self' https://maps.google.com https://www.google.com",
     `connect-src 'self'${development ? " ws: wss:" : ""}`,
     "object-src 'none'",
     "base-uri 'self'",

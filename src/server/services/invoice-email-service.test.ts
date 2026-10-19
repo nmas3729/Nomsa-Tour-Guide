@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PaymentStatus } from "@/src/server/db/generated/enums";
 import { getPrismaClient } from "@/src/server/db/prisma";
 import { requireBillingEmailEnvironment } from "@/src/config/env";
+import { formatCurrency } from "@/src/lib/format";
 import { sendApprovedBookingInvoice } from "./invoice-email-service";
 
 const { sendMock, toSummaryMock } = vi.hoisted(() => ({
@@ -108,7 +109,9 @@ describe("approved booking receipt email", () => {
         from: "billing@nomsatourguides.co.za",
         to: "alex@example.com",
         subject: "Payment receipt for booking NOM-ABC123",
-        text: expect.stringContaining("Payment status: SUCCEEDED"),
+        text: expect.stringContaining(
+          `Amount: ${formatCurrency(2400)}\nPayment status: SUCCEEDED`,
+        ),
         attachments: [expect.objectContaining({
           filename: "receipt-NOM-ABC123.pdf",
           content: expect.any(String),

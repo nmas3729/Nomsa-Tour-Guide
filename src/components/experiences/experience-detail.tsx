@@ -131,7 +131,7 @@ export function ExperienceDetail({
           <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 border-y border-border/60 py-4 text-xs font-medium text-foreground">
             {data.reviewCount > 0 && data.rating > 0 ? (
               <span className="flex items-center gap-1.5 font-semibold">
-                <Star className="fill-accent text-accent" size={15} />
+                <Star className="fill-accent-strong text-accent-strong" size={15} />
                 {data.rating.toFixed(1)}
                 <span className="font-normal text-muted-foreground">({data.reviewCount} guest reviews)</span>
               </span>
@@ -402,7 +402,7 @@ export function ExperienceDetail({
                       <h2 className="font-display text-2xl font-semibold tracking-tight">Meet {guide.name}</h2>
                       {guide.rating !== undefined && guide.rating > 0 ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-card px-3 py-1.5 text-xs font-semibold text-foreground">
-                          <Star aria-hidden="true" className="size-3.5 fill-accent text-accent" />
+                          <Star aria-hidden="true" className="size-3.5 fill-accent-strong text-accent-strong" />
                           Guide rating {guide.rating.toFixed(1)}
                         </span>
                       ) : (
@@ -503,7 +503,7 @@ export function ExperienceDetail({
                     </h2>
                     {data.reviewCount > 0 && data.rating > 0 ? (
                       <p className="mt-1 flex items-center gap-1.5 text-sm text-foreground">
-                        <Star className="size-4 fill-accent text-accent" />
+                        <Star className="size-4 fill-accent-strong text-accent-strong" />
                         <span className="font-bold">{data.rating.toFixed(1)}</span> out of 5 · {data.reviewCount} guest reviews
                       </p>
                     ) : (
@@ -532,7 +532,7 @@ export function ExperienceDetail({
                           </div>
                         </div>
 
-                        <div className="mt-3 flex text-accent">
+                        <div className="mt-3 flex text-accent-strong">
                           {Array.from({ length: rev.rating }).map((_, i) => (
                             <Star className="size-3.5 fill-current" key={i} />
                           ))}
@@ -592,7 +592,7 @@ export function ExperienceDetail({
                   </div>
                   {data.reviewCount > 0 && data.rating > 0 ? (
                     <span className="flex items-center gap-1 text-xs font-semibold">
-                      <Star className="size-3.5 fill-accent text-accent" />
+                      <Star className="size-3.5 fill-accent-strong text-accent-strong" />
                       {data.rating.toFixed(1)} ({data.reviewCount})
                     </span>
                   ) : (
@@ -615,7 +615,7 @@ export function ExperienceDetail({
                 {/* Book Now Button */}
                 <Button
                   asChild
-                  className="mt-5 h-13 w-full rounded-full bg-accent text-white font-semibold text-base shadow-xl shadow-accent/25 transition-transform hover:-translate-y-0.5 hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transform-none motion-reduce:transition-none"
+                  className="mt-5 h-13 w-full rounded-full bg-accent text-accent-foreground font-semibold text-base shadow-xl shadow-accent/25 transition-transform hover:-translate-y-0.5 hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transform-none motion-reduce:transition-none"
                   size="lg"
                 >
                   <Link href={bookingHref}>Choose date &amp; travellers</Link>

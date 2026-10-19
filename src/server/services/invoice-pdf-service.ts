@@ -1,4 +1,5 @@
 import type { BookingRecordSummary } from "@/src/server/services/booking-service";
+import { formatCurrency } from "@/src/lib/format";
 
 export interface InvoiceDocumentData {
   reference: string;
@@ -77,7 +78,7 @@ function wrappedLines(value: string, maxLength: number): string[] {
 }
 
 export function generateInvoicePdf(invoice: InvoiceDocumentData): Buffer {
-  const amount = `${invoice.currency} ${invoice.amount.toFixed(2)}`;
+  const amount = formatCurrency(invoice.amount, invoice.currency);
   const paidDate = invoice.paidAt ? invoice.paidAt.slice(0, 10) : "Not recorded";
   const cancellationLines = wrappedLines(
     `Cancellation terms: ${invoice.cancellationPolicySnapshot || "Not recorded"}`,
@@ -96,13 +97,13 @@ export function generateInvoicePdf(invoice: InvoiceDocumentData): Buffer {
     pdfLine(`Travellers: ${invoice.travellerCount || "Not listed"}`, 54, 577, 11),
     pdfLine(`Payment status: ${invoice.paymentStatus}`, 54, 544, 11),
     pdfLine(`Receipt date (payment approval date): ${paidDate}`, 54, 527, 11),
-    pdfLine(`Base price: ${invoice.baseAmount === null ? "Unavailable" : `${invoice.currency} ${invoice.baseAmount.toFixed(2)}`}`, 54, 494, 10),
-    pdfLine(`Optional extras: ${invoice.optionalExtrasAmount === null ? "Unavailable" : `${invoice.currency} ${invoice.optionalExtrasAmount.toFixed(2)}`}`, 54, 477, 10),
-    pdfLine(`Transport: ${invoice.transportAmount === null ? "Unavailable" : `${invoice.currency} ${invoice.transportAmount.toFixed(2)}`}`, 54, 460, 10),
-    pdfLine(`Platform fee: ${invoice.platformFeeAmount === null ? "Unavailable" : `${invoice.currency} ${invoice.platformFeeAmount.toFixed(2)}`}`, 54, 443, 10),
-    pdfLine(`Taxes: ${invoice.taxAmount === null ? "Unavailable" : `${invoice.currency} ${invoice.taxAmount.toFixed(2)}`}`, 54, 426, 10),
+    pdfLine(`Base price: ${invoice.baseAmount === null ? "Unavailable" : formatCurrency(invoice.baseAmount, invoice.currency)}`, 54, 494, 10),
+    pdfLine(`Optional extras: ${invoice.optionalExtrasAmount === null ? "Unavailable" : formatCurrency(invoice.optionalExtrasAmount, invoice.currency)}`, 54, 477, 10),
+    pdfLine(`Transport: ${invoice.transportAmount === null ? "Unavailable" : formatCurrency(invoice.transportAmount, invoice.currency)}`, 54, 460, 10),
+    pdfLine(`Platform fee: ${invoice.platformFeeAmount === null ? "Unavailable" : formatCurrency(invoice.platformFeeAmount, invoice.currency)}`, 54, 443, 10),
+    pdfLine(`Taxes: ${invoice.taxAmount === null ? "Unavailable" : formatCurrency(invoice.taxAmount, invoice.currency)}`, 54, 426, 10),
     pdfLine(`Total paid: ${amount}`, 54, 405, 14),
-    pdfLine(`Refund recorded: ${invoice.currency} ${invoice.refundedAmount.toFixed(2)}`, 54, 385, 10),
+    pdfLine(`Refund recorded: ${formatCurrency(invoice.refundedAmount, invoice.currency)}`, 54, 385, 10),
     ...cancellationLines,
     pdfLine("Billing: billing@nomsatourguides.co.za", 54, 80, 9),
     pdfLine("nomsatourguides.co.za", 54, 64, 9),

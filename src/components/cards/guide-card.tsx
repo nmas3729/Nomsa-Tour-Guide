@@ -62,7 +62,7 @@ export function GuideCard({
               <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                 {rating !== undefined && rating > 0 ? (
                   <span aria-label={`Guide rating ${rating.toFixed(1)} out of 5`} className="flex items-center gap-1 font-semibold text-foreground">
-                    <Star aria-hidden="true" className="fill-accent text-accent" size={13} />
+                    <Star aria-hidden="true" className="fill-accent-strong text-accent-strong" size={13} />
                     {rating.toFixed(1)} <span className="font-normal text-muted-foreground">rating</span>
                   </span>
                 ) : null}

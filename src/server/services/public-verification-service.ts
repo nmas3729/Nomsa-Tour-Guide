@@ -5,7 +5,8 @@ import {
   GuideApplicationStatus,
   ReviewStatus,
 } from "@/src/server/db/generated/enums";
-import type { ExperienceDetailData } from "@/src/data/experience-details";
+import { detailedExperiences, type ExperienceDetailData } from "@/src/data/experience-details";
+import { destinations, experiences } from "@/src/data/public-site";
 import { getServerEnvironment } from "@/src/config/env";
 import { getPrismaClient } from "@/src/server/db/prisma";
 
@@ -46,6 +47,34 @@ function cloudinaryImageUrl(publicId: string): string | undefined {
   return `https://res.cloudinary.com/${cloudName}/image/upload/f_auto,q_auto,w_1600/${encodedId}`;
 }
 
+const localExperienceImages = [
+  ...destinations.map(({ image, imageDescription }) => ({
+    url: image,
+    altText: imageDescription,
+  })),
+  ...experiences.map(({ image, imageDescription }) => ({
+    url: image,
+    altText: imageDescription,
+  })),
+  ...Object.values(detailedExperiences).flatMap(({ images }) =>
+    images.map(({ url, caption }) => ({ url, altText: caption })),
+  ),
+];
+const localExperienceImagesByName = new Map(
+  localExperienceImages.map((image) => [
+    image.url.split("/").at(-1)?.replace(/\.[^.]+$/, "") ?? "",
+    image,
+  ]),
+);
+
+function experienceImage(storageKey: string, altText: string) {
+  const localImage = localExperienceImagesByName.get(storageKey.split("/").at(-1) ?? "");
+  if (localImage) return { ...localImage, altText: altText || localImage.altText };
+
+  const url = cloudinaryImageUrl(storageKey);
+  return url ? { url, altText } : undefined;
+}
+
 function experienceDuration(minutes: number) {
   const hours = Math.floor(minutes / 60);
   const remainder = minutes % 60;
@@ -83,25 +112,30 @@ export async function getApprovedExperiences(): Promise<ApprovedExperienceSummar
     },
     orderBy: { title: "asc" },
   });
-  return rows.map((row) => ({
-    title: row.title,
-    slug: row.slug,
-    destination: row.destination.name,
-    provinces: [row.destination.city.province.name],
-    image: row.images[0] ? cloudinaryImageUrl(row.images[0].storageKey) : undefined,
-    imageDescription: row.images[0]?.altText,
-    duration: experienceDuration(row.durationMinutes),
-    durationMinutes: row.durationMinutes,
-    price: Number(row.price),
-    category: row.category.name,
-    minGuests: row.minGuests,
-    maxGuests: row.maxGuests,
-    languages: row.guide.languages,
-    guide: {
-      name: row.guide.user.name,
-      image: row.guide.profilePhoto ?? undefined,
-    },
-  }));
+  return rows.map((row) => {
+    const image = row.images[0]
+      ? experienceImage(row.images[0].storageKey, row.images[0].altText)
+      : undefined;
+    return {
+      title: row.title,
+      slug: row.slug,
+      destination: row.destination.name,
+      provinces: [row.destination.city.province.name],
+      image: image?.url,
+      imageDescription: image?.altText,
+      duration: experienceDuration(row.durationMinutes),
+      durationMinutes: row.durationMinutes,
+      price: Number(row.price),
+      category: row.category.name,
+      minGuests: row.minGuests,
+      maxGuests: row.maxGuests,
+      languages: row.guide.languages,
+      guide: {
+        name: row.guide.user.name,
+        image: row.guide.profilePhoto ?? undefined,
+      },
+    };
+  });
 }
 
 export async function getApprovedExperienceDetail(
@@ -178,8 +212,8 @@ export async function getApprovedExperienceDetail(
       : `${row.minGuests}–${row.maxGuests} guests`,
     languages: row.guide.languages,
     images: row.images.flatMap((image) => {
-      const url = cloudinaryImageUrl(image.storageKey);
-      return url ? [{ url, caption: image.altText }] : [];
+      const resolved = experienceImage(image.storageKey, image.altText);
+      return resolved ? [{ url: resolved.url, caption: resolved.altText }] : [];
     }),
     overview: row.description,
     highlights: [],

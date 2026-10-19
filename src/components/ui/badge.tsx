@@ -11,7 +11,7 @@ const badgeVariants = cva("inline-flex items-center rounded-full border px-3 py-
       warning: "border-transparent bg-warning/15 text-warning-foreground",
       destructive: "border-transparent bg-destructive/10 text-destructive",
       outline: "border-border/60 text-foreground",
-      accent: "border-transparent bg-accent/12 text-accent",
+      accent: "border-transparent bg-accent/12 text-accent-strong",
     },
   },
   defaultVariants: { variant: "default" },

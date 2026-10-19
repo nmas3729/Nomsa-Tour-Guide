@@ -36,8 +36,8 @@ describe("invoice PDF generation", () => {
     expect(content).toContain("Payment status: SUCCEEDED");
     expect(content).toContain("PAYMENT RECEIPT");
     expect(content).toContain("Receipt date \\(payment approval date\\): 2026-10-17");
-    expect(content).toContain("Total paid: ZAR 2400.00");
-    expect(content).toContain("Base price: ZAR 2400.00");
+    expect(content).toContain("Total paid: R 2 400,00");
+    expect(content).toContain("Base price: R 2 400,00");
     expect(content).toContain("Cancellation terms: Cancellation is free up to 48 hours");
     expect(content).toContain("billing@nomsatourguides.co.za");
     expect(content).toContain("+27 66 485 8827");

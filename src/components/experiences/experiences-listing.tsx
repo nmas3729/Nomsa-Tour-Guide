@@ -347,7 +347,7 @@ export function ExperiencesListing({
                 >
                   {province}
                   <span className={cn("ml-1.5 text-[10px]", isSelected ? "text-primary-foreground/75" : "text-muted-foreground")}>
-                    {count}
+                    {count > 0 ? count : null}
                   </span>
                 </button>
               );
@@ -421,7 +421,9 @@ export function ExperiencesListing({
           >
             {availabilitySearchError
               ? availabilitySearchError
-              : availabilityDate && availableExperienceSlugs
+              : !approvedExperiences.length
+                ? "We're onboarding local guides and adding our first experiences. Check back soon for new tours across South Africa."
+                : availabilityDate && availableExperienceSlugs
                 ? `${filteredExperiences.length} listed ${filteredExperiences.length === 1 ? "experience currently meets" : "experiences currently meet"} capacity for ${availabilityGuestCount} ${availabilityGuestCount === 1 ? "guest" : "guests"} on ${availabilityDate}. Capacity is checked again when booking.`
                 : "Choose a travel date to filter by live availability. Without a date, results show listed experiences that may not have an available departure."}
           </div>
@@ -430,7 +432,9 @@ export function ExperiencesListing({
           <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-border/60 pb-5">
             <div>
               <p className="text-sm font-semibold text-foreground">
-                {sortedExperiences.length} of {approvedExperiences.length} reviewed experiences
+                {approvedExperiences.length > 0
+                  ? `${sortedExperiences.length} of ${approvedExperiences.length} reviewed experiences`
+                  : "New experiences are coming soon"}
               </p>
             </div>
 
@@ -593,33 +597,43 @@ export function ExperiencesListing({
                 <div className="rounded-3xl border border-border/80 bg-card p-12 text-center">
                   <Compass aria-hidden="true" className="mx-auto text-primary" size={36} />
                   <h3 className="mt-4 font-display text-2xl font-semibold">
-                    {availabilityDate && availableExperienceSlugs
+                    {!approvedExperiences.length
+                      ? "New experiences are coming soon"
+                      : availabilityDate && availableExperienceSlugs
                       ? "No experiences match your date, group size, and filters"
                       : selectedProvince
                       ? `No experiences listed in ${selectedProvince} just yet`
                       : "No experiences match those filters"}
                   </h3>
                   <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
-                    {availabilityDate && availableExperienceSlugs
+                    {!approvedExperiences.length
+                      ? "We're onboarding local guides and adding our first experiences. Check back soon for new tours across South Africa."
+                      : availabilityDate && availableExperienceSlugs
                       ? "Try another date, a smaller group, or broader filters. Capacity is confirmed again during booking."
                       : selectedProvince
                       ? "Explore another province or clear the province filter to see the experiences currently listed."
                       : "Try expanding your budget range, resetting destination filters, or selecting All Categories."}
                   </p>
-                  <Button
-                    className="mt-6"
-                    onClick={() => {
-                      setSelectedCategory("All");
-                      setSelectedDestination("");
-                      setSelectedProvince("");
-                      setPriceRange(maximumPrice);
-                      setSelectedLanguage("");
-                      setDurationFilter("any");
-                      setCurrentPage(1);
-                    }}
-                  >
-                    Reset all filters
-                  </Button>
+                  {!approvedExperiences.length ? (
+                    <Button asChild className="mt-6">
+                      <Link href="/become-a-guide">Become a guide</Link>
+                    </Button>
+                  ) : (
+                    <Button
+                      className="mt-6"
+                      onClick={() => {
+                        setSelectedCategory("All");
+                        setSelectedDestination("");
+                        setSelectedProvince("");
+                        setPriceRange(maximumPrice);
+                        setSelectedLanguage("");
+                        setDurationFilter("any");
+                        setCurrentPage(1);
+                      }}
+                    >
+                      Reset all filters
+                    </Button>
+                  )}
                 </div>
               )}
 

@@ -7,7 +7,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
         We could not load this page. Please try again.
       </p>
       {error.digest && <p className="mt-2 text-xs text-muted-foreground">Reference: {error.digest}</p>}
-      <button onClick={reset} className="mt-6 rounded-md bg-accent px-4 py-2 text-sm text-white">
+      <button onClick={reset} className="mt-6 rounded-md bg-accent px-4 py-2 text-sm text-accent-foreground">
         Try again
       </button>
     </section>

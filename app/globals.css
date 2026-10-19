@@ -16,15 +16,16 @@
   --neutral-foreground: var(--muted-foreground);
   --accent: #C9A65E;
   --accent-foreground: #10203A;
+  --accent-strong: #755719;
   --highlight: #A98243;
-  --success: #2E7D32;
+  --success: #24652B;
   --warning: #B78335;
   --warning-foreground: #31230D;
   --destructive: #C62828;
   --destructive-foreground: #FEFEFE;
   --border: rgba(30, 41, 59, 0.08);
   --input: rgba(30, 41, 59, 0.12);
-  --ring: #B99754;
+  --ring: #755719;
   --radius: 0.875rem;
   --space-xs: 0.25rem;
   --space-sm: 0.5rem;
@@ -59,6 +60,7 @@
   --color-neutral-foreground: var(--neutral-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-accent-strong: var(--accent-strong);
   --color-highlight: var(--highlight);
   --color-success: var(--success);
   --color-warning: var(--warning);
@@ -112,6 +114,7 @@
   --neutral-foreground: var(--muted-foreground);
   --accent: #D8B96B;
   --accent-foreground: #10203A;
+  --accent-strong: #E1C980;
   --highlight: #E1C980;
   --success: #86B79A;
   --warning: #D8B96B;
@@ -317,13 +320,6 @@ body {
   background:
     linear-gradient(145deg, color-mix(in srgb, var(--foreground) 2%, transparent), transparent 60%),
     color-mix(in srgb, var(--secondary) 48%, var(--card));
-}
-
-.contact-map-grid {
-  background-image:
-    linear-gradient(45deg, transparent 48%, rgb(128 148 129 / 18%) 49%, rgb(128 148 129 / 18%) 51%, transparent 52%),
-    linear-gradient(-45deg, transparent 48%, rgb(128 148 129 / 18%) 49%, rgb(128 148 129 / 18%) 51%, transparent 52%);
-  background-size: 36px 36px;
 }
 
 .experience-map-grid {
@@ -853,8 +849,12 @@ select:focus-visible {
 }
 
 .home-hero-indicator {
-  box-shadow: 0 0 16px rgba(229, 168, 64, 0.8);
+  box-shadow: 0 0 14px rgba(229, 168, 64, 0.65);
   animation: hero-indicator-pulse 2.4s ease-in-out infinite;
+}
+
+.home-hero-scroll-icon {
+  animation: hero-scroll-bounce 1.6s ease-in-out infinite;
 }
 
 .home-hero-title-accent {
@@ -1204,15 +1204,27 @@ select:focus-visible {
   0%,
   100% {
     opacity: 0.82;
-    box-shadow: 0 0 10px rgba(229, 168, 64, 0.52);
   }
   50% {
     opacity: 1;
-    box-shadow: 0 0 18px rgba(229, 168, 64, 0.9);
+  }
+}
+
+@keyframes hero-scroll-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(10px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .home-hero-scroll-icon {
+    animation: none;
+  }
+
   .ambient-background__aurora {
     animation: none;
     will-change: auto;

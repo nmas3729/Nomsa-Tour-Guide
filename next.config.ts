@@ -18,11 +18,12 @@ const nextConfig: NextConfig = {
       });
     }
 
-    // Staging/test ground must never be indexed.
-    securityHeaders.push({
-      key: "X-Robots-Tag",
-      value: "noindex, nofollow",
-    });
+    if (process.env.NODE_ENV !== "production" || process.env.NO_INDEX === "true") {
+      securityHeaders.push({
+        key: "X-Robots-Tag",
+        value: "noindex, nofollow",
+      });
+    }
 
     return [{ source: "/:path*", headers: securityHeaders }];
   },
@@ -32,6 +33,7 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   images: {
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
         protocol: "https",

@@ -129,7 +129,7 @@ export function BookingConfirmationView() {
                 message.tone === "success"
                   ? "bg-primary/10 text-primary"
                   : message.tone === "pending"
-                    ? "bg-accent/15 text-highlight"
+                    ? "bg-accent/15 text-accent-strong"
                     : "bg-destructive/10 text-destructive"
               }`}
             >

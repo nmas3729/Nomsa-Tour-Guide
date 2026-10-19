@@ -24,7 +24,7 @@ export function NewsletterForm() {
           type="email"
         />
         <Button
-          className="h-12 shrink-0 rounded-full bg-accent px-7 font-semibold text-white shadow-md shadow-accent/20 hover:bg-accent/90"
+          className="h-12 shrink-0 rounded-full bg-accent px-7 font-semibold text-accent-foreground shadow-md shadow-accent/20 hover:bg-accent/90"
           aria-describedby="newsletter-unavailable"
           disabled
           type="button"
