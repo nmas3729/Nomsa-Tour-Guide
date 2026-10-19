@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { Geist_Mono, Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { HomeReturnButton } from "@/src/components/navigation/home-return-button";
+import { TooltipProvider } from "@/src/components/ui/tooltip";
 import { ThemeProvider } from "@/src/lib/theme/theme-provider";
 import { siteUrl } from "@/src/lib/seo";
 
@@ -59,15 +60,17 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <HomeReturnButton />
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          disableTransitionOnChange
-          enableSystem
-          nonce={nonce}
-        >
-          {children}
-        </ThemeProvider>
+        <TooltipProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            disableTransitionOnChange
+            enableSystem
+            nonce={nonce}
+          >
+            {children}
+          </ThemeProvider>
+        </TooltipProvider>
       </body>
     </html>
   );
